@@ -20,8 +20,13 @@ namespace Stransfer.App.SmokeTests;
 internal static class Program
 {
     [STAThread]
-    private static int Main()
+    private static int Main(string[] arguments)
     {
+        if (arguments.Contains("--clipboard-formats"))
+        {
+            Console.WriteLine(JsonSerializer.Serialize(Clipboard.GetDataObject()?.GetFormats(autoConvert: false) ?? []));
+            return 0;
+        }
         var root = Path.Combine(Path.GetTempPath(), "Stransfer-ui-tests", Guid.NewGuid().ToString("N"));
         var state = Path.Combine(root, "state");
         var source = Path.Combine(root, "source", "smoke.txt");
@@ -114,6 +119,10 @@ internal static class Program
             }
             Require(!window.ViewModel.Settings.UseForExplorerPaste && !window.ViewModel.Settings.ExplorerContextMenu,
                 "Explorer integration must be opt-in.");
+            workspace.SelectedIndex = 2; window.UpdateLayout();
+            PumpUntil(() => window.ViewModel.Tools.Items.All(item => item.IsReady), errors, "Installed tools did not refresh.");
+            var toolButtons = Descendants<Button>(Find<ItemsControl>(window, "ToolsList")).Where(button => button.Command is Stransfer.App.Infrastructure.AsyncCommand).ToArray();
+            Require(toolButtons.Length == window.ViewModel.Tools.Items.Count && toolButtons.All(button => button.Content is "Install" or "Remove"), "Tools page still has a fixed Install label.");
             workspace.SelectedIndex = 3; window.UpdateLayout();
             var toggle = Find<CheckBox>(window, "EnablePasteShortcut");
             ((IToggleProvider)new CheckBoxAutomationPeer(toggle).GetPattern(PatternInterface.Toggle)).Toggle();
@@ -126,6 +135,10 @@ internal static class Program
             var shortcuts = ShortcutTests.RunAsync(window);
             PumpUntil(() => shortcuts.IsCompleted, errors, "Shortcut routing tests did not complete.");
             shortcuts.GetAwaiter().GetResult();
+            var tools = ToolTests.RunAsync();
+            PumpUntil(() => tools.IsCompleted, errors, "Tool state tests did not complete."); tools.GetAwaiter().GetResult();
+            var shellCopy = ShellTransferTests.RunAsync(root);
+            PumpUntil(() => shellCopy.IsCompleted, errors, "Virtual device copy did not complete."); shellCopy.GetAwaiter().GetResult();
             workspace.SelectedIndex = 0; window.UpdateLayout();
             Console.WriteLine("PASS  Settings, Tools and Shortcuts tabs, shortcut toggle persistence and registration status bindings");
             var composedSource = Path.Combine(root, "source", "composed.txt");

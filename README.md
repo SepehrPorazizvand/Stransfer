@@ -6,12 +6,13 @@ Windows file transfers with durable progress, pause/resume, destination prefligh
 
 Launch `dist/Stransfer/Stransfer.exe` for the portable full build, or run `dist/StransferSetup.exe` to install it. No .NET installation or external copy tool is needed. Portable profiles start with Explorer integration and sign-in startup disabled. Setup offers the integration options explicitly. Configure the keyboard shortcut on **Shortcuts** and background/startup behavior in **Settings**.
 
-- **Ctrl+Shift+V:** copy or cut files, focus a destination folder in Explorer, then paste with Stransfer. The Shortcuts page enables the shortcut, reports registration/conflicts and offers Retry. If the destination is uncertain, Stransfer opens the composer with no destination selected. Keep the app running in the tray to use the shortcut.
+- **Ctrl+Shift+V:** copy or cut files, focus a destination folder in Explorer, then paste with Stransfer. Transfer starts directly without opening the main window. The Shortcuts page enables the shortcut, reports registration/conflicts and offers Retry. If the destination is uncertain, a folder picker starts the transfer as soon as you choose a folder. Keep the app running in the tray to use the shortcut.
 - **Ctrl+V:** uses Windows default paste. Shift+Insert also retains its normal behavior.
 - **Explorer menu:** enable “Paste with Stransfer,” then right-click a folder or its background. On Windows 11 use **Show more options**. This command starts or contacts the running app.
 - **Background:** optionally keep the app in the tray and start it when signing in. The tray menu opens the queue, pauses transfers, or saves progress and exits.
 - **Resume:** interrupted jobs are retained. On startup or after the original drives reconnect, Stransfer asks before resuming. Drive identity is checked even if the drive letter changed.
 - **Transfer window:** add, drop or paste sources; select a destination; choose Copy/Move; click **Check and transfer**. Existing destinations are kept with numbered names. Pause, Resume, Open destination, Remove and completed History are available.
+- **USB phones:** copy files or folders from the phone in Explorer, open a PC destination folder and press Ctrl+Shift+V. Shell namespace selections (`Shell IDList Array`) use Windows' device provider and its progress/cancel dialog without staging an extra copy on the PC. This device path always copies, keeping phone originals. Device transfers have Windows-managed progress/space checks; they are outside Stransfer's durable queue, SHA-256 verification and restart/resume system. After a disconnect, cancellation or restart, copy/paste the phone selection again. Descriptor-only attachments and phone-to-phone/PC-to-phone destinations are not supported by this path.
 
 The built-in Explorer Paste menu, Explorer drag-and-drop, elevated windows and transfers initiated by other applications retain their behavior. Ctrl+Shift+V uses Windows hotkey registration without code injection or a keyboard hook. See [validation](docs/VALIDATION.md) for the tested scope and remaining hardware checks.
 
@@ -48,7 +49,7 @@ dotnet run --project tests/Stransfer.Benchmarks -c Release -- benchmark-verified
 
 ## Optional tools
 
-Transfers need no optional packages. The Tools page explains and individually installs 7-Zip (separate archive utility) or the .NET 10 SDK (source builds/tests). Install uses Windows Package Manager, needs a connection, may require elevation, and accepts the package/source agreements only after the user clicks Install. Tools are not bundled or installed automatically. Official website links are available if winget is missing.
+Transfers need no optional packages. The Tools page explains and individually installs 7-Zip (separate archive utility) or the .NET 10 SDK (source builds/tests). Installed tools show **Remove**; missing tools show **Install**. Status refreshes when the page/window is opened and with **Refresh installed tools**, including SDK versions. Remove targets that exact package through winget; other installed versions may remain. Install needs a connection, may require elevation, and accepts the package/source agreements only after the user clicks Install. Tools are not bundled or installed automatically. Official website links are available if winget is missing.
 
 The **slim build requires the .NET 10 Windows Desktop Runtime before it can launch**. The full build includes that runtime. A runtime required to launch the UI cannot be installed from inside an app that has not started.
 

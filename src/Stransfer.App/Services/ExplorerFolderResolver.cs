@@ -14,9 +14,9 @@ internal static class ExplorerFolderResolver
         if (name.ToString() is not ("CabinetWClass" or "ExploreWClass")) return null;
         var info = new GuiThreadInfo { Size = Marshal.SizeOf<GuiThreadInfo>() };
         if (!GetGUIThreadInfo(0, ref info) || info.Focus == IntPtr.Zero) return null;
-        name.Clear(); GetClassName(info.Focus, name, name.Capacity);
-        // Paste in an address bar, search box or rename editor must retain normal text behavior.
-        if (name.ToString() is not ("DirectUIHWND" or "SysListView32" or "SHELLDLL_DefView")) return null;
+        // Ctrl+Shift+V is an explicit file-transfer command. Toolbar/address-bar focus
+        // can still identify the active folder; Ctrl+V is never handled here.
+        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         object? shell = null, windows = null;
         try
         {
@@ -35,8 +35,7 @@ internal static class ExplorerFolderResolver
                     var browserId = typeof(IShellBrowser).GUID;
                     if (((IComServiceProvider)item).QueryService(ref service, ref browserId, out browserObject) != 0) continue;
                     if (((IShellBrowser)browserObject).QueryActiveShellView(out view) != 0 || view is null) continue;
-                    if (view.GetWindow(out var viewWindow) != 0 || !IsWindowVisible(viewWindow)
-                        || info.Focus != viewWindow && !IsChild(viewWindow, info.Focus)) continue;
+                    if (view.GetWindow(out var viewWindow) != 0 || !IsWindowVisible(viewWindow)) continue;
                     // Resolve the focused view itself. This avoids picking an inactive Explorer tab's path.
                     var folderId = typeof(IPersistFolder2).GUID;
                     ((IFolderView)view).GetFolder(ref folderId, out folderObject);
@@ -45,7 +44,7 @@ internal static class ExplorerFolderResolver
                     {
                         var path = new StringBuilder(32768);
                         if (SHGetPathFromIDListEx(pidl, path, (uint)path.Capacity, 0) && Path.IsPathFullyQualified(path.ToString()))
-                            return new(foreground, info.Focus, path.ToString());
+                            candidates.Add(path.ToString());
                     }
                     finally { Marshal.FreeCoTaskMem(pidl); }
                 }
@@ -55,7 +54,7 @@ internal static class ExplorerFolderResolver
         }
         catch (Exception error) when (error is COMException or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
         finally { Release(windows); Release(shell); }
-        return null;
+        return candidates.Count == 1 ? new(foreground, info.Focus, candidates.Single()) : null;
     }
     private static void Release(object? value) { if (value is not null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }
     public static bool StillFocused(ExplorerTarget target)

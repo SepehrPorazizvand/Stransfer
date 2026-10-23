@@ -20,6 +20,8 @@ public sealed class AppRuntime
     private readonly Dictionary<Guid, uint> cutClipboard = new();
     private DateTime nextProbe;
     private bool probing, exiting, started;
+    private readonly CancellationTokenSource deviceStop = new();
+    private Task? deviceCopy;
     public TransferCoordinator Coordinator { get; }
     public MainViewModel ViewModel { get; }
     public bool KeepInBackground => settings.KeepInBackground;
@@ -31,9 +33,9 @@ public sealed class AppRuntime
         Coordinator = new(Path.Combine(store.DirectoryPath, "jobs"));
         dialogs = new(window);
         ViewModel = new(Coordinator, dialogs, settings, SaveSettings, store.DirectoryPath);
-        explorer = new(window, AcceptPasteAsync, ViewModel.PreparePaste,
-            text => { ViewModel.Status = text; Notify(text); Reveal(); }, ViewModel.Shortcuts.UpdateStatus,
-            () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy);
+        explorer = new(window, AcceptPasteAsync, ChoosePasteDestinationAsync,
+            text => { ViewModel.Status = text; Notify(text); }, ViewModel.Shortcuts.UpdateStatus,
+            () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy && deviceCopy is null);
         ViewModel.Shortcuts.RetryRequested += SaveSettings;
         ViewModel.RevealRequested += Reveal;
         tray = new Forms.NotifyIcon { Text = "Stransfer — resumable file transfers", Visible = true };
@@ -93,7 +95,7 @@ public sealed class AppRuntime
         {
             var index = Array.IndexOf(arguments, "--destination");
             if (index < 0 || index + 1 >= arguments.Length) throw new ArgumentException("A destination folder is required.");
-            var clip = DesktopDialogs.ReadClipboard() ?? throw new IOException("Copy or cut files in Explorer first.");
+            using var clip = ShellClipboardReader.Read() ?? throw new IOException("Copy or cut files in Explorer first.");
             await AcceptPasteAsync(clip, arguments[index + 1]);
         }
         catch (Exception error) { ViewModel.Report(error); }
@@ -101,10 +103,34 @@ public sealed class AppRuntime
     private async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
     {
         if (exiting) throw new IOException("Stransfer is shutting down. Paste again after restarting it.");
+        if (clipboard.Shell is { } shell)
+        {
+            ViewModel.Status = "Starting USB / virtual-file copy. Windows shows device transfer progress.";
+            var progress = new Progress<int>(percent => ViewModel.Status = $"Device copy · {percent}% · Windows manages this transfer.");
+            deviceCopy = shell.CopyAsync(destination, progress, deviceStop.Token);
+            try
+            {
+                await deviceCopy;
+                ViewModel.Status = "Device copy completed. Original files remain on the device.";
+                Notify(ViewModel.Status);
+            }
+            catch (OperationCanceledException)
+            {
+                ViewModel.Status = "Device copy stopped. Copy the files again to retry; originals remain on the device.";
+                Notify(ViewModel.Status);
+            }
+            finally { deviceCopy = null; }
+            return;
+        }
         var id = await ViewModel.CreateAndScheduleAsync(clipboard.Sources, destination, clipboard.Operation);
         prompted.Add(id);
         if (clipboard.Operation == TransferOperation.Move) cutClipboard[id] = clipboard.Sequence;
         Notify("Transfer queued. Double-click the tray icon to see progress.");
+    }
+    private async Task ChoosePasteDestinationAsync(ClipboardTransfer clipboard)
+    {
+        // A folder picker is the only necessary input when no Explorer destination is identifiable.
+        if (dialogs.ChooseDestination() is { } destination) await AcceptPasteAsync(clipboard, destination);
     }
     private async Task ProbeResumeAsync()
     {
@@ -135,7 +161,10 @@ public sealed class AppRuntime
     {
         if (exiting) return; exiting = true;
         timer.Stop(); explorer.Dispose(); ViewModel.Status = "Saving progress…";
-        try { await Coordinator.StopAsync(); }
-        finally { tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
+        deviceStop.Cancel();
+        try { await Task.WhenAll(Coordinator.StopAsync(), deviceCopy ?? Task.CompletedTask); }
+        catch (OperationCanceledException) { }
+        catch (Exception error) { ViewModel.Status = "Device transfer stopped: " + error.Message; }
+        finally { deviceStop.Dispose(); tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
     }
 }

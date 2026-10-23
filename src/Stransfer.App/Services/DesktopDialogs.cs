@@ -4,7 +4,12 @@ using Stransfer.Core;
 
 namespace Stransfer.App.Services;
 
-public sealed record ClipboardTransfer(string[] Sources, TransferOperation Operation, uint Sequence);
+public sealed record ClipboardTransfer(string[] Sources, TransferOperation Operation, uint Sequence) : IDisposable
+{
+    internal ShellClipboardTransfer? Shell { get; init; }
+    public bool IsDeviceTransfer => Shell is not null;
+    public void Dispose() => Shell?.Dispose();
+}
 
 public sealed class DesktopDialogs(Window owner)
 {

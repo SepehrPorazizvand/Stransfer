@@ -20,7 +20,7 @@ internal static class ShortcutTests
         {
             accepted.Add((clip, target));
             if (hold is not null) await hold.Task;
-        }, prepared.Add, text => report = text, (_, text) => status = text, () => allowed);
+        }, clip => { prepared.Add(clip); return Task.CompletedTask; }, text => report = text, (_, text) => status = text, () => allowed);
         fake.Clipboard = new([@"C:\source\file.txt"], TransferOperation.Move, 10);
         fake.Target = new((IntPtr)1, (IntPtr)2, @"C:\destination");
         fake.Sequence = 10;

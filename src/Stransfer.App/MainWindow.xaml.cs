@@ -14,6 +14,7 @@ public partial class MainWindow : Window
         Runtime = new(this); DataContext = ViewModel;
         ViewModel.ComposerRequested += () => Workspace.SelectedIndex = 0;
         Loaded += async (_, _) => await Runtime.StartAsync(background);
+        Activated += (_, _) => ViewModel.Tools.Refresh.Execute(null);
         Closing += async (_, e) =>
         {
             if (Runtime.IsExiting) return;

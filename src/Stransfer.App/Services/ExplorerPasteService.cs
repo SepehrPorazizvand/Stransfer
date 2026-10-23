@@ -9,7 +9,7 @@ public sealed class ExplorerPasteService : IDisposable
 {
     private readonly IShortcutPlatform platform;
     private readonly Func<ClipboardTransfer, string, Task> accept;
-    private readonly Action<ClipboardTransfer> prepare;
+    private readonly Func<ClipboardTransfer, Task> prepare;
     private readonly Action<string> report;
     private readonly Action<bool, string> status;
     private readonly Func<bool> canAccept;
@@ -18,11 +18,11 @@ public sealed class ExplorerPasteService : IDisposable
     public static uint ClipboardSequence => GetClipboardSequenceNumber();
 
     public ExplorerPasteService(Window window, Func<ClipboardTransfer, string, Task> accept,
-        Action<ClipboardTransfer> prepare, Action<string> report, Action<bool, string> status, Func<bool> canAccept)
+        Func<ClipboardTransfer, Task> prepare, Action<string> report, Action<bool, string> status, Func<bool> canAccept)
         : this(new WindowShortcutPlatform(window), accept, prepare, report, status, canAccept) { }
 
     internal ExplorerPasteService(IShortcutPlatform platform, Func<ClipboardTransfer, string, Task> accept,
-        Action<ClipboardTransfer> prepare, Action<string> report, Action<bool, string> status, Func<bool> canAccept)
+        Func<ClipboardTransfer, Task> prepare, Action<string> report, Action<bool, string> status, Func<bool> canAccept)
     {
         this.platform = platform; this.accept = accept; this.prepare = prepare;
         this.report = report; this.status = status; this.canAccept = canAccept;
@@ -51,13 +51,14 @@ public sealed class ExplorerPasteService : IDisposable
         accepting = true;
         try
         {
-            var clipboard = platform.ReadClipboard();
-            if (clipboard is null) { report("Copy or cut files in Explorer first, then press Ctrl+Shift+V."); return; }
+            // Capture the destination before a delayed phone clipboard provider can change focus.
             var target = platform.ReadTarget();
+            using var clipboard = platform.ReadClipboard();
+            if (clipboard is null) { report("Copy or cut files in Explorer first, then press Ctrl+Shift+V."); return; }
             if (clipboard.Sequence != platform.Sequence)
             { report("The clipboard changed. Copy or cut the files again."); return; }
             if (target is not null && platform.StillFocused(target)) await accept(clipboard, target.Directory);
-            else prepare(clipboard);
+            else await prepare(clipboard);
         }
         catch (Exception error) { report("Stransfer paste could not start: " + error.Message); }
         finally { accepting = false; }
@@ -110,7 +111,7 @@ internal sealed class WindowShortcutPlatform(Window window) : IShortcutPlatform
         if (registered && source is not null) UnregisterHotKey(source.Handle, Id);
         registered = false;
     }
-    public ClipboardTransfer? ReadClipboard() => DesktopDialogs.ReadClipboard();
+    public ClipboardTransfer? ReadClipboard() => ShellClipboardReader.Read();
     public uint Sequence => ExplorerPasteService.ClipboardSequence;
     public ExplorerTarget? ReadTarget() => ExplorerFolderResolver.Read();
     public bool StillFocused(ExplorerTarget target) => ExplorerFolderResolver.StillFocused(target);

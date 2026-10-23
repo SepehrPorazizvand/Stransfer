@@ -12,6 +12,8 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 | Settings/Tools/Shortcuts views, toggle persistence and registration status bindings | Passed |
 | Ctrl+Shift+V registration and WM_HOTKEY dispatch | Passed with a real test-owned HWND; Ctrl+V messages rejected |
 | Shortcut conflict/retry/disable, clipboard/focus changes, modal guard, duplicate suppression and composer fallback | Passed with injected platform inputs |
+| Shell namespace selection without FileDrop | Passed through real IFileOperation on a dedicated STA: folder contents, empty directories, keep-both collisions, source retention and cancellation |
+| Installed-tool actions | Passed: SDK version detection, Install/Remove labels, external refresh and exact-package command generation; no real tools removed in tests |
 | New transfer through the composer with capacity display | Passed |
 | Completed history removal with the original drive absent | Passed; retained both source and destination |
 | Current-user named-pipe command delivery and shutdown | Passed |
@@ -26,6 +28,8 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 | ARM64 | Publish target available; not hardware-tested |
 
 Published-process checks used `STRANSFER_STATE_DIR` and changed no normal startup/menu registration. The slim process used `DOTNET_ROOT_X64` pointing at the local SDK's runtime. Neither build installed tools or transferred user data. The builds are unsigned.
+
+The device-copy test supplies a real Shell namespace data object with ordinary FileDrop paths hidden. It validates the clipboard/COM copy route, not a physical phone. Hardware testing remains necessary. USB phone copies use Windows' provider and are not durable Stransfer jobs; restart/resume requires a fresh paste. Installed .NET SDK 10.0.402 was detected on this development machine and left installed.
 
 ## Manual Explorer matrix before treating shortcut integration as stable
 

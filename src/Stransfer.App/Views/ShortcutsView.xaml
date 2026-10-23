@@ -7,7 +7,7 @@
           <TextBlock Text="Ctrl+Shift+V · Paste with Stransfer" Style="{StaticResource SubHeading}"/>
           <CheckBox x:Name="EnablePasteShortcut" Content="Enable Ctrl+Shift+V" IsChecked="{Binding Settings.UseForExplorerPaste}"/>
           <TextBlock Text="Copy or cut files, focus the destination folder in Explorer, then press Ctrl+Shift+V. Space is checked before starting." Style="{StaticResource Hint}"/>
-          <TextBlock Text="If a destination cannot be identified, Stransfer opens so you can choose one. Keep Stransfer running in the tray to use this shortcut." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+          <TextBlock Text="Transfers start directly in the active Explorer folder. If no destination is available, choose one in the folder picker. Keep Stransfer running in the tray." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
           <TextBlock x:Name="ShortcutStatus" Text="{Binding Status}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,14,0,8"/>
           <Button x:Name="RetryShortcut" Content="Retry shortcut registration" Command="{Binding Retry}" HorizontalAlignment="Left"/>
         </StackPanel>
@@ -22,6 +22,7 @@
         <StackPanel>
           <TextBlock Text="Copy and move" Style="{StaticResource SubHeading}"/>
           <TextBlock Text="Ctrl+C copies. Ctrl+X cuts. Ctrl+Shift+V uses that choice for Stransfer. Cross-drive moves verify the copy before deleting the source." Style="{StaticResource Hint}"/>
+          <TextBlock Text="USB phones use Windows device-copy progress. Phone originals are kept; interrupted device copies must be pasted again." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
         </StackPanel>
       </Border>
     </StackPanel>
