@@ -93,7 +93,7 @@ public sealed class AppRuntime
         {
             var sources = arguments.Where(path => !path.StartsWith("--", StringComparison.Ordinal)
                 && (File.Exists(path) || Directory.Exists(path))).ToArray();
-            if (sources.Length > 0) ViewModel.PreparePaste(new(sources, TransferOperation.Copy, 0));
+            if (sources.Length > 0) await ChoosePasteDestinationAsync(new(sources, TransferOperation.Copy, 0));
             else if (!arguments.Contains("--background")) Reveal();
             return;
         }
@@ -136,7 +136,7 @@ public sealed class AppRuntime
             if (progress.ViewModel.JobId is { } id && jobs.TryGetValue(id, out var job))
                 progress.ViewModel.Update(job, Coordinator.IsScheduled(id));
     }
-    private async Task ChoosePasteDestinationAsync(ClipboardTransfer clipboard)
+    internal async Task ChoosePasteDestinationAsync(ClipboardTransfer clipboard)
     {
         // A folder picker is the only necessary input when no Explorer destination is identifiable.
         if (dialogs.ChooseDestination() is { } destination) await AcceptPasteAsync(clipboard, destination);

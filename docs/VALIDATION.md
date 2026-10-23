@@ -19,7 +19,7 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 | Namespace restart/resume | Passed: paused durable byte checkpoint, reloaded records, corrupt-prefix rejection and verified completion |
 | Physical Samsung S24 FE | Passed two 128 KiB PC → MTP → PC round trips with content verification and empty directories; successful test fixtures removed |
 | Installed-tool actions | Passed: SDK version detection, Install/Remove labels, external refresh and exact-package command generation; no real tools removed in tests |
-| New transfer through the composer with capacity display | Passed |
+| Dashboard without the manual New Transfer form | Passed: queue/history remain visible; transfer scheduling still checks capacity; shortcut opens compact progress |
 | Compact shortcut transfer window | Passed: 480 × 330 layout, hidden dashboard during preparation/transfer/errors, real Pause/Resume, completion and closing the window while transfer continues |
 | Completed history removal with the original drive absent | Passed; retained both source and destination |
 | Current-user named-pipe command delivery and shutdown | Passed |

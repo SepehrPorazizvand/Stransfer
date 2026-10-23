@@ -24,6 +24,10 @@ public partial class MainWindow : Window
     }
     private void Window_DragOver(object sender, DragEventArgs e)
     { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) && !ViewModel.ResumeVisible ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; }
-    private void Window_Drop(object sender, DragEventArgs e)
-    { if (!ViewModel.ResumeVisible && e.Data.GetData(DataFormats.FileDrop) is string[] paths) ViewModel.AddSources(paths); }
+    private async void Window_Drop(object sender, DragEventArgs e)
+    {
+        if (ViewModel.ResumeVisible || e.Data.GetData(DataFormats.FileDrop) is not string[] paths) return;
+        e.Handled = true;
+        await Runtime.ChoosePasteDestinationAsync(new(paths, Stransfer.Core.TransferOperation.Copy, 0));
+    }
 }

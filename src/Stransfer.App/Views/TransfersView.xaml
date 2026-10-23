@@ -2,63 +2,6 @@
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="0,0,8,0">
 
-      <!-- Transfer Composer Card -->
-      <Border>
-        <Border.Style>
-          <Style TargetType="Border" BasedOn="{StaticResource Card}">
-            <Style.Triggers>
-              <DataTrigger Binding="{Binding Busy}" Value="True">
-                <Setter Property="IsEnabled" Value="False"/>
-              </DataTrigger>
-            </Style.Triggers>
-          </Style>
-        </Border.Style>
-        <StackPanel>
-          <DockPanel Margin="0,0,0,8">
-            <TextBlock Text="New Transfer" Style="{StaticResource SubHeading}" VerticalAlignment="Center"/>
-            <TextBlock Text="{Binding SourceSummary}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-          </DockPanel>
-
-          <!-- Drop zone / Source Selector -->
-          <Border Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,12">
-            <DockPanel>
-              <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
-                <Button Content="+ Add files" Command="{Binding AddFiles}"/>
-                <Button Content="+ Add folders" Command="{Binding AddFolders}"/>
-                <Button Content="📋 Paste" Command="{Binding Paste}" ToolTip="Paste files from Windows clipboard"/>
-                <Button Content="Clear" Command="{Binding ClearSources}"/>
-              </WrapPanel>
-              <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Select or drag files from Explorer" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
-                <TextBlock Text="Copy or cut files, then click Paste here. Use Ctrl+Shift+V in an Explorer destination folder." Style="{StaticResource Hint}" Margin="0,2,0,0"/>
-              </StackPanel>
-            </DockPanel>
-          </Border>
-
-          <!-- Destination Selector -->
-          <TextBlock Text="Destination folder" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,5" FontSize="12" FontWeight="SemiBold"/>
-          <DockPanel Margin="0,0,0,10">
-            <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding Browse}" Margin="8,0,0,0" Padding="16,8"/>
-            <TextBox Text="{Binding Destination, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Destination folder" VerticalAlignment="Center"/>
-          </DockPanel>
-
-          <!-- Transfer Options -->
-          <CheckBox Content="Move files (delete source only after copy and hash verification succeed)" IsChecked="{Binding Move}" Margin="0,4,0,8"/>
-
-          <!-- Preflight info -->
-          <Border Background="#141720" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,2,0,12">
-            <DockPanel>
-              <TextBlock Text="ℹ" Foreground="{DynamicResource AccentBrush}" Margin="0,0,8,0" FontWeight="Bold"/>
-              <TextBlock Text="{Binding Preflight}" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/>
-            </DockPanel>
-          </Border>
-
-          <DockPanel>
-            <ProgressBar IsIndeterminate="True" Visibility="{Binding Busy, Converter={StaticResource BoolVisibility}}" DockPanel.Dock="Right" Width="180" Height="4" VerticalAlignment="Center" Margin="12,0,0,0"/>
-            <Button x:Name="StartButton" Content="Check and transfer" Command="{Binding Start}" Style="{StaticResource Primary}" HorizontalAlignment="Left" Padding="24,10" FontSize="14"/>
-          </DockPanel>
-        </StackPanel>
-      </Border>
 
       <!-- Queue & History Header -->
       <DockPanel Margin="0,8,0,12">
@@ -187,7 +130,7 @@
         <StackPanel HorizontalAlignment="Center">
           <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,8" Opacity="0.6"/>
           <TextBlock Text="No active transfers" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
-          <TextBlock Text="Copy files, then use Ctrl+Shift+V in Explorer or drop them above." Style="{StaticResource Hint}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+          <TextBlock Text="Copy files, then press Ctrl+Shift+V in an Explorer destination folder." Style="{StaticResource Hint}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
         </StackPanel>
       </Border>
 

@@ -147,14 +147,15 @@ internal static class Program
             File.WriteAllText(composedSource, "A fresh transfer from the composer.");
             window.ViewModel.AddSources([composedSource]);
             window.ViewModel.Destination = destination;
-            Invoke(Find<Button>(window, "StartButton"));
+            Require(!Descendants<TextBlock>(window).Any(block => block.Text == "New Transfer"), "Removed manual transfer form is still visible.");
+            window.ViewModel.Start.Execute(null);
             PumpUntil(() => File.Exists(Path.Combine(destination, "composed.txt")) && !window.ViewModel.Busy
                 && manager.Jobs.Count == 2 && manager.Jobs.All(job => job.Status == TransferStatus.Completed),
                 errors, "The composer did not preflight and complete a new transfer.");
             Require(File.ReadAllText(composedSource) == File.ReadAllText(Path.Combine(destination, "composed.txt")), "The composed transfer changed data.");
             Require(window.ViewModel.Preflight.Contains("needed") && window.ViewModel.Preflight.Contains("free"), "Preflight did not display destination capacity.");
             AssertNoErrors(errors, bindingTrace);
-            Console.WriteLine("PASS  composer starts a new checked transfer off the UI thread and displays available space");
+            Console.WriteLine("PASS  dashboard has no manual transfer form; transfer scheduling still checks capacity and completes off the UI thread");
             TestSingleInstance(errors);
             TestCompletedRemoval(root, errors);
             CompactTransferTests.Run(window, root);
