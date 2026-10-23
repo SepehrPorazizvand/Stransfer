@@ -135,7 +135,7 @@ public partial class MainWindow : Window
             var settingsPath = Path.Combine(stateDir, "settings.json");
             var settings = File.Exists(settingsPath)
                 ? JsonNode.Parse(File.ReadAllText(settingsPath)) as JsonObject ?? throw new IOException("Existing settings are invalid. Keep a backup before repairing them.")
-                : new JsonObject { ["StartWithWindows"] = false, ["KeepInBackground"] = true, ["VerifyCopies"] = true, ["SmallFileWorkers"] = 0, ["LastDestination"] = "" };
+                : new JsonObject { ["StartWithWindows"] = false, ["KeepInBackground"] = true, ["VerifyCopies"] = false, ["SmallFileWorkers"] = 0, ["LastDestination"] = "" };
             settings["UseForExplorerPaste"] = pasteShortcuts;
             settings["ExplorerContextMenu"] = contextMenu;
             File.WriteAllText(settingsPath + ".tmp", settings.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
@@ -186,7 +186,7 @@ public partial class MainWindow : Window
             {
                 using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\Stransfer");
                 key.SetValue("DisplayName", "Stransfer");
-                key.SetValue("DisplayVersion", "1.0.0");
+                key.SetValue("DisplayVersion", "1.1.0");
                 key.SetValue("Publisher", "Stransfer");
                 key.SetValue("DisplayIcon", targetExe + ",0");
                 key.SetValue("InstallLocation", installDir);

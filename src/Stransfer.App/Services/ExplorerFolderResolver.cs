@@ -45,6 +45,13 @@ internal static class ExplorerFolderResolver
                         var path = new StringBuilder(32768);
                         if (SHGetPathFromIDListEx(pidl, path, (uint)path.Capacity, 0) && Path.IsPathFullyQualified(path.ToString()))
                             candidates.Add(path.ToString());
+                        else
+                        {
+                            var id = typeof(IShellItem).GUID;
+                            Marshal.ThrowExceptionForHR(SHCreateItemFromIDList(pidl, ref id, out var folder));
+                            try { candidates.Add(TransferStorage.Encode(folder)); }
+                            finally { Release(folder); }
+                        }
                     }
                     finally { Marshal.FreeCoTaskMem(pidl); }
                 }
@@ -74,6 +81,7 @@ internal static class ExplorerFolderResolver
     [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr handle);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern bool SHGetPathFromIDListEx(IntPtr pidl, StringBuilder path, uint count, uint flags);
+    [DllImport("shell32.dll")] private static extern int SHCreateItemFromIDList(IntPtr pidl, ref Guid id, out IShellItem item);
 
     [ComImport, Guid("6D5140C1-7436-11CE-8034-00AA006009FA"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IComServiceProvider { [PreserveSig] int QueryService(ref Guid service, ref Guid id, [MarshalAs(UnmanagedType.Interface)] out object result); }

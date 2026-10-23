@@ -42,6 +42,11 @@ public sealed partial class TransferManager
         }
         if (state.Operation == TransferOperation.Move) VolumeIdentity.RejectNamedStreamsForMove(file.Source);
         var bufferSize = file.Length >= 512L * 1024 * 1024 ? 4 * 1024 * 1024 : (int)Math.Clamp(file.Length, 64 * 1024, 1024 * 1024);
+        if (OperatingSystem.IsWindows() && !state.Verify && state.Operation == TransferOperation.Copy && file.Length >= 8L * 1024 * 1024
+            && file.Offset == 0 && !File.Exists(file.Partial))
+            await Task.Run(() => NativeCopy(state, file, token), token).ConfigureAwait(false);
+        else
+        {
         // These streams already receive pooled buffers. Disable FileStream's additional per-file buffers,
         // which otherwise allocate megabytes for a tiny file and duplicate the copy pipeline.
         await using (var source = new FileStream(file.Source, FileMode.Open, FileAccess.Read, FileShare.Read, 1,
@@ -80,7 +85,7 @@ public sealed partial class TransferManager
                     (buffer, nextBuffer) = (nextBuffer, buffer);
                     SetOffset(state, file, file.Offset + read);
                     Publish(state);
-                    if (file.Offset - checkpoint >= 32L * 1024 * 1024 || timer.ElapsedMilliseconds >= 1000)
+                    if (file.Offset - checkpoint >= (checkpoint == 0 ? 32L : 256L) * 1024 * 1024 || timer.ElapsedMilliseconds >= 1000)
                     {
                         DurableCheckpoint(state, file, destination);
                         checkpoint = file.Offset;
@@ -95,7 +100,7 @@ public sealed partial class TransferManager
                 {
                     destination.Position = 0;
                     var sourceHash = sourceHasher!.GetHashAndReset();
-                    var destinationHash = await SHA256.HashDataAsync(destination, token).ConfigureAwait(false);
+                    var destinationHash = await HashStreamAsync(destination, token).ConfigureAwait(false);
                     if (!CryptographicOperations.FixedTimeEquals(sourceHash, destinationHash))
                         throw new IOException("SHA-256 verification failed. The source was kept unchanged.");
                     lock (state.Sync) file.VerifiedHash = Convert.ToHexString(sourceHash);
@@ -115,6 +120,7 @@ public sealed partial class TransferManager
                 if (pendingRead is not null) { try { await pendingRead.ConfigureAwait(false); } catch { /* Preserve the original copy failure. */ } }
                 ArrayPool<byte>.Shared.Return(buffer); ArrayPool<byte>.Shared.Return(nextBuffer);
             }
+        }
         }
         token.ThrowIfCancellationRequested();
         EnsureOriginalVolumesPresent(state);
@@ -165,7 +171,7 @@ public sealed partial class TransferManager
             if (file.VerifiedHash is not null)
             {
                 await using var destination = new FileStream(file.Destination, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                var hash = Convert.ToHexString(await SHA256.HashDataAsync(destination, token).ConfigureAwait(false));
+                var hash = Convert.ToHexString(await HashStreamAsync(destination, token).ConfigureAwait(false));
                 if (hash != file.VerifiedHash) throw new IOException("A published destination failed SHA-256 verification. The source was retained.");
             }
             else if (File.Exists(file.Source))
@@ -199,12 +205,12 @@ public sealed partial class TransferManager
         if (file.VerifiedHash is null) throw new IOException("A move cannot delete its source without a verified destination hash.");
         // Keep the destination read-locked until the verified source has been removed.
         await using var destination = new FileStream(file.Destination, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        var destinationHash = Convert.ToHexString(await SHA256.HashDataAsync(destination, token).ConfigureAwait(false));
+        var destinationHash = Convert.ToHexString(await HashStreamAsync(destination, token).ConfigureAwait(false));
         if (destinationHash != file.VerifiedHash) throw new IOException("The destination changed before source removal; the source was retained.");
         await using var source = VolumeIdentity.OpenForVerifiedDelete(file.Source, 1024 * 1024);
         ValidateSource(file);
         VolumeIdentity.RejectNamedStreamsForMove(file.Source);
-        var sourceHash = Convert.ToHexString(await SHA256.HashDataAsync(source, token).ConfigureAwait(false));
+        var sourceHash = Convert.ToHexString(await HashStreamAsync(source, token).ConfigureAwait(false));
         if (sourceHash != file.VerifiedHash) throw new IOException("The source changed before removal; both files were retained.");
         ValidateSource(file);
         token.ThrowIfCancellationRequested();
@@ -233,6 +239,23 @@ public sealed partial class TransferManager
             }
         }
         finally { ArrayPool<byte>.Shared.Return(first); ArrayPool<byte>.Shared.Return(second); }
+    }
+
+    private static async Task<byte[]> HashStreamAsync(FileStream stream, CancellationToken token)
+    {
+        // HashDataAsync uses small reads. With FileStream buffering disabled this becomes
+        // one native asynchronous I/O operation per few KiB; use the copy engine's pooled blocks.
+        var size = (int)Math.Clamp(stream.Length, 64 * 1024, 4 * 1024 * 1024);
+        var buffer = ArrayPool<byte>.Shared.Rent(size);
+        try
+        {
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            int read;
+            while ((read = await stream.ReadAsync(buffer.AsMemory(0, size), token).ConfigureAwait(false)) != 0)
+                hash.AppendData(buffer, 0, read);
+            return hash.GetHashAndReset();
+        }
+        finally { ArrayPool<byte>.Shared.Return(buffer); }
     }
 
     private static void ValidateSource(FilePlan file)

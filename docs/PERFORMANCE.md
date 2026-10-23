@@ -1,15 +1,19 @@
-# Local performance results
+# Performance measurements
 
-Final local run: 2026-10-22, Windows x64. Three rounds per case; median shown. Warm filesystem cache, one local temporary directory, no concurrently running Stransfer tests/builds. The host's background activity is not controlled.
+Measured on 2026-10-23, Windows x64, MSI M371 NVMe SSD. Source C: and destination D: are partitions on the same physical disk. Three rotated rounds per mode, warm cache; medians below. No other Stransfer build/test ran during the final run. System background activity was not controlled.
 
-**Copy readback verification was disabled for this run.** The app normally enables it. The baseline is `File.Copy` followed by a disk flush for each file; it does not have Stransfer's journal, recovery and preflight. This is not a direct measurement of the Explorer UI, USB drives or physical HDD/SSD pairs.
-
-| Workload | File.Copy + flush | Stransfer, 1 worker | Stransfer, 4 workers |
+| Workload | Windows File.Copy + flush | Stransfer Fast | Stransfer Verified |
 |---|---:|---:|---:|
-| 1,000 × 1 KiB | 2.996 s | 4.183 s | 3.543 s |
-| 200 × 64 KiB | 3.597 s | 1.152 s | 0.759 s |
-| 1 × 128 MiB | 0.140 s | 0.188 s | 0.193 s |
+| 1,000 x 1 KiB | 2.753 s | 2.383 s | 2.526 s |
+| 200 x 64 KiB | 3.111 s | 0.566 s | 0.570 s |
+| 1 x 512 MiB | 0.602 s | 0.703 s | 1.284 s |
 
-Four workers improved the 64 KiB workload substantially. The 1 KiB workload and single large file remained slower than the baseline. A higher worker setting is therefore not a universal speed guarantee. The app does not claim that the many-tiny-files problem has disappeared.
+Fast improved both small-file workloads; the single large file remained about 17% slower than the native baseline. Verified large-file copying improved from 3.181 s before this change to 1.284 s, while still adding checksum work compared with ordinary Windows copying. These results do not establish that Stransfer always beats Explorer.
 
-The raw samples and exact medians are in [benchmark-local.json](benchmark-local.json). Run the benchmark on the actual drives and with the intended verification setting before making hardware-specific performance claims.
+The baseline uses native File.Copy followed by Flush(true), with no checksum pass. Stransfer includes scanning, preflight, durable journals and final publish. Fast skips full checksum readback; Verified includes it. Actual Explorer completion can have different cache/flush behavior. Physical USB/HDD pairs, cold-cache performance, antivirus effects and other workloads can differ.
+
+[Raw final samples](benchmark-crossdrive-final.json), [before optimization](benchmark-crossdrive-before.json), and [original local results](benchmark-local.json) are retained. Run on the intended drives:
+
+```powershell
+dotnet run --project tests/Stransfer.Benchmarks -c Release -- benchmark.json --destination-root D:\ --compare-verification
+```

@@ -33,6 +33,7 @@ public sealed record TransferJobSnapshot
     public TransferOperation Operation { get; init; }
     public TransferStatus Status { get; init; }
     public string DestinationDirectory { get; init; } = "";
+    public string? DestinationDisplayName { get; init; }
     public IReadOnlyList<string> Sources { get; init; } = [];
     public long TotalBytes { get; init; }
     public long BytesTransferred { get; init; }
@@ -70,6 +71,7 @@ internal sealed class JobState
     [System.Text.Json.Serialization.JsonIgnore] public TransferPreflight? Preflight { get; set; }
     [System.Text.Json.Serialization.JsonIgnore] public Queue<PendingJournalEntry> PendingJournal { get; } = new();
     [System.Text.Json.Serialization.JsonIgnore] public bool JournalWriterRunning { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore] public TaskCompletionSource? JournalBatchReady { get; set; }
     [System.Text.Json.Serialization.JsonIgnore] public int EffectiveWorkers { get; set; } = 1;
     [System.Text.Json.Serialization.JsonIgnore] public DirectoryGuard? DirectoryGuard { get; set; }
     [System.Text.Json.Serialization.JsonIgnore] public object Sync { get; } = new();

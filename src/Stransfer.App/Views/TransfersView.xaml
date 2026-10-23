@@ -161,7 +161,7 @@
                   <WrapPanel HorizontalAlignment="Left">
                     <Button Content="⏸ Pause" Command="{Binding DataContext.PauseJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanPause, Converter={StaticResource BoolVisibility}}"/>
                     <Button Content="▶ Resume" Command="{Binding DataContext.ResumeJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanResume, Converter={StaticResource BoolVisibility}}" Style="{StaticResource Primary}"/>
-                    <Button Content="📁 Open destination" Command="{Binding DataContext.OpenJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Destination}"/>
+                    <Button Content="📁 Open destination" Command="{Binding DataContext.OpenJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding DestinationLocation}"/>
                     <Button Content="✕ Cancel" Command="{Binding DataContext.RemoveJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanRemove, Converter={StaticResource BoolVisibility}}"/>
                   </WrapPanel>
                 </DockPanel>

@@ -22,7 +22,7 @@
         <StackPanel>
           <TextBlock Text="Copy and move" Style="{StaticResource SubHeading}"/>
           <TextBlock Text="Ctrl+C copies. Ctrl+X cuts. Ctrl+Shift+V uses that choice for Stransfer. Cross-drive moves verify the copy before deleting the source." Style="{StaticResource Hint}"/>
-          <TextBlock Text="USB phones use Windows device-copy progress. Phone originals are kept; interrupted device copies must be pasted again." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+          <TextBlock Text="USB phones use the Stransfer queue, progress and Pause / Resume. Unlock the phone and enable File transfer. Sequential-only devices restart the current incomplete file; completed files are kept." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
         </StackPanel>
       </Border>
     </StackPanel>

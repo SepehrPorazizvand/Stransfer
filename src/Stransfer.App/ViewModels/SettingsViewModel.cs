@@ -10,6 +10,12 @@ public sealed class SettingsViewModel(AppSettings settings, Action save) : Obser
     public bool UseForExplorerPaste { get => settings.UseForExplorerPaste; set { if (settings.UseForExplorerPaste == value) return; settings.UseForExplorerPaste = value; Save(); } }
     public bool ExplorerContextMenu { get => settings.ExplorerContextMenu; set { if (settings.ExplorerContextMenu == value) return; settings.ExplorerContextMenu = value; Save(); } }
     public bool VerifyCopies { get => settings.VerifyCopies; set { if (settings.VerifyCopies == value) return; settings.VerifyCopies = value; Save(); } }
+    public string[] CopyModes { get; } = ["Fast — native copy with saved progress", "Verified — SHA-256 read-back"];
+    public int CopyModeIndex
+    {
+        get => settings.VerifyCopies ? 1 : 0;
+        set { if (value is not (0 or 1)) return; VerifyCopies = value == 1; Changed(); }
+    }
     public int WorkerIndex
     {
         get => Array.IndexOf(WorkerValues, settings.SmallFileWorkers);

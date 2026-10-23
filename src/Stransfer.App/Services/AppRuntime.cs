@@ -20,8 +20,6 @@ public sealed class AppRuntime
     private readonly Dictionary<Guid, uint> cutClipboard = new();
     private DateTime nextProbe;
     private bool probing, exiting, started;
-    private readonly CancellationTokenSource deviceStop = new();
-    private Task? deviceCopy;
     public TransferCoordinator Coordinator { get; }
     public MainViewModel ViewModel { get; }
     public bool KeepInBackground => settings.KeepInBackground;
@@ -35,7 +33,7 @@ public sealed class AppRuntime
         ViewModel = new(Coordinator, dialogs, settings, SaveSettings, store.DirectoryPath);
         explorer = new(window, AcceptPasteAsync, ChoosePasteDestinationAsync,
             text => { ViewModel.Status = text; Notify(text); }, ViewModel.Shortcuts.UpdateStatus,
-            () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy && deviceCopy is null);
+            () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy);
         ViewModel.Shortcuts.RetryRequested += SaveSettings;
         ViewModel.RevealRequested += Reveal;
         tray = new Forms.NotifyIcon { Text = "Stransfer — resumable file transfers", Visible = true };
@@ -66,7 +64,7 @@ public sealed class AppRuntime
         SaveSettings(); ViewModel.Refresh(); timer.Start();
         if (background) window.Hide();
         if (store.LoadWarning is { } warning) ViewModel.Status = warning;
-        if (Coordinator.Manager.RecoveryWarnings.Count > 0) ViewModel.Status = string.Join("\n", Coordinator.Manager.RecoveryWarnings);
+        if (Coordinator.RecoveryWarnings.Count > 0) ViewModel.Status = string.Join("\n", Coordinator.RecoveryWarnings);
         await ProbeResumeAsync();
     }
     private void SaveSettings()
@@ -103,27 +101,8 @@ public sealed class AppRuntime
     private async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
     {
         if (exiting) throw new IOException("Stransfer is shutting down. Paste again after restarting it.");
-        if (deviceCopy is not null) throw new IOException("A device copy is already running. Wait for it to finish or cancel it in Windows progress.");
-        if (clipboard.Shell is { } shell)
-        {
-            ViewModel.Status = "Starting USB / virtual-file copy. Windows shows device transfer progress.";
-            var progress = new Progress<int>(percent => ViewModel.Status = $"Device copy · {percent}% · Windows manages this transfer.");
-            deviceCopy = shell.CopyAsync(destination, progress, deviceStop.Token);
-            try
-            {
-                await deviceCopy;
-                ViewModel.Status = "Device copy completed. Original files remain on the device.";
-                Notify(ViewModel.Status);
-            }
-            catch (OperationCanceledException)
-            {
-                ViewModel.Status = "Device copy stopped. Copy the files again to retry; originals remain on the device.";
-                Notify(ViewModel.Status);
-            }
-            finally { deviceCopy = null; }
-            return;
-        }
-        var id = await ViewModel.CreateAndScheduleAsync(clipboard.Sources, destination, clipboard.Operation);
+        var sources = clipboard.Shell is { } shell ? shell.ReadSources() : clipboard.Sources;
+        var id = await ViewModel.CreateAndScheduleAsync(sources, destination, clipboard.Operation);
         prompted.Add(id);
         if (clipboard.Operation == TransferOperation.Move) cutClipboard[id] = clipboard.Sequence;
         Notify("Transfer queued. Double-click the tray icon to see progress.");
@@ -140,7 +119,8 @@ public sealed class AppRuntime
         try
         {
             var jobs = Coordinator.Jobs.Where(job => job.CanResume && !Coordinator.IsScheduled(job.Id)).ToArray();
-            var availability = await Task.Run(() => jobs.Select(job => (Job: job, Ready: Coordinator.Manager.AreDrivesAvailable(job.Id))).ToArray());
+            var availability = new List<(TransferJobSnapshot Job, bool Ready)>();
+            foreach (var job in jobs) availability.Add((job, await Coordinator.AreDrivesAvailableAsync(job.Id)));
             if (exiting) return;
             foreach (var item in availability.Where(item => !item.Ready)) prompted.Remove(item.Job.Id);
             var ready = availability.Where(item => item.Ready && !prompted.Contains(item.Job.Id) && !Coordinator.IsScheduled(item.Job.Id)).Select(item => item.Job).ToArray();
@@ -162,10 +142,9 @@ public sealed class AppRuntime
     {
         if (exiting) return; exiting = true;
         timer.Stop(); explorer.Dispose(); ViewModel.Status = "Saving progress…";
-        deviceStop.Cancel();
-        try { await Task.WhenAll(Coordinator.StopAsync(), deviceCopy ?? Task.CompletedTask); }
+        try { await Coordinator.StopAsync(); }
         catch (OperationCanceledException) { }
         catch (Exception error) { ViewModel.Status = "Device transfer stopped: " + error.Message; }
-        finally { deviceStop.Dispose(); tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
+        finally { tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
     }
 }

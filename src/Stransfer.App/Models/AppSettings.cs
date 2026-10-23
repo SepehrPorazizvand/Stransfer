@@ -8,7 +8,7 @@ public sealed class AppSettings
     public bool KeepInBackground { get; set; } = true;
     public bool UseForExplorerPaste { get; set; }
     public bool ExplorerContextMenu { get; set; }
-    public bool VerifyCopies { get; set; } = true;
+    public bool VerifyCopies { get; set; }
     public int SmallFileWorkers { get; set; }
     public string LastDestination { get; set; } = "";
 }

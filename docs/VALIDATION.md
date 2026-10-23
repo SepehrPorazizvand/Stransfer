@@ -4,7 +4,7 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 
 | Check | Result |
 |---|---|
-| Core integration suite | 32/32 passed, including transient manifest/journal sharing locks |
+| Core integration suite | 33/33 passed, including native accelerated copy pause/checkpoint/restart and transient manifest/journal sharing locks |
 | Sequential abrupt process termination and recovery | Passed with real child-process termination |
 | Parallel abrupt process termination and recovery | Passed; also repeated eight times after fixing transient lock handling |
 | Real WPF resources, layout and bindings | Passed |
@@ -12,7 +12,9 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 | Settings/Tools/Shortcuts views, toggle persistence and registration status bindings | Passed |
 | Ctrl+Shift+V registration and WM_HOTKEY dispatch | Passed with a real test-owned HWND; Ctrl+V messages rejected |
 | Shortcut conflict/retry/disable, clipboard/focus changes, modal guard, duplicate suppression and composer fallback | Passed with injected platform inputs |
-| Shell namespace selection without FileDrop | Passed through real IFileOperation on a dedicated STA: folder contents, empty directories, keep-both collisions, source retention and cancellation |
+| Shell namespace selection without FileDrop | Passed through Stransfer IStream reads/writes: PC/Shell in both directions, Shell-to-Shell, content verification, empty directories and keep-both |
+| Namespace restart/resume | Passed: paused durable byte checkpoint, reloaded records, corrupt-prefix rejection and verified completion |
+| Physical Samsung S24 FE | Passed two 128 KiB PC → MTP → PC round trips with content verification and empty directories; successful test fixtures removed |
 | Installed-tool actions | Passed: SDK version detection, Install/Remove labels, external refresh and exact-package command generation; no real tools removed in tests |
 | New transfer through the composer with capacity display | Passed |
 | Completed history removal with the original drive absent | Passed; retained both source and destination |
@@ -29,7 +31,7 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 
 Published-process checks used `STRANSFER_STATE_DIR` and changed no normal startup/menu registration. The slim process used `DOTNET_ROOT_X64` pointing at the local SDK's runtime. Neither build installed tools or transferred user data. The builds are unsigned.
 
-The device-copy test supplies a real Shell namespace data object with ordinary FileDrop paths hidden. It validates the clipboard/COM copy route, not a physical phone. Hardware testing remains necessary. USB phone copies use Windows' provider and are not durable Stransfer jobs; restart/resume requires a fresh paste. Installed .NET SDK 10.0.402 was detected on this development machine and left installed.
+Automated namespace tests use real Shell filesystem providers with FileDrop hidden. A separate opt-in hardware test also passed against the connected Samsung phone. Physical USB unplug/replug and power-loss tests remain unverified; the phone became unavailable before the larger physical pause/resume test could run. Some uniquely named Stransfer-test-* fixtures from failed development checks may remain on the disconnected phone; the opt-in --device-test-cleanup test command removes only matching local test records and verified fixture contents. Installed SDK and 7-Zip were retained.
 
 ## Manual Explorer matrix before treating shortcut integration as stable
 

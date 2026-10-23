@@ -57,7 +57,7 @@ public sealed class MainViewModel : ObservableObject
         AddFiles = new(_ => AddSources(dialogs.ChooseFiles())); AddFolders = new(_ => AddSources(dialogs.ChooseFolders()));
         ClearSources = new(_ => { Sources.Clear(); Changed(nameof(SourceSummary)); });
         Browse = new(_ => { if (dialogs.ChooseDestination() is { } folder) Destination = folder; });
-        Paste = new(_ => { try { if (DesktopDialogs.ReadClipboard() is { } clip) { AddSources(clip.Sources); Move = clip.Operation == TransferOperation.Move; } else Status = "Copy or cut files in Explorer first."; } catch (Exception error) { Report(error); } });
+        Paste = new(_ => { try { using var clip = ShellClipboardReader.Read(); if (clip is not null) { AddSources(clip.Shell?.ReadSources() ?? clip.Sources); Move = clip.Operation == TransferOperation.Move; } else Status = "Copy or cut files in Explorer first."; } catch (Exception error) { Report(error); } });
         Start = new(async _ => { await CreateAndScheduleAsync(Sources.ToArray(), Destination, Move ? TransferOperation.Move : TransferOperation.Copy); Sources.Clear(); Changed(nameof(SourceSummary)); }, Report);
         ShowQueue = new(_ => History = false); ShowHistory = new(_ => History = true);
         PauseJob = new(value => { if (value is Guid id) coordinator.Pause(id); });
@@ -92,7 +92,7 @@ public sealed class MainViewModel : ObservableObject
         {
             var verify = settings.VerifyCopies;
             var options = new TransferOptions { SmallFileWorkers = settings.SmallFileWorkers };
-            var job = await Task.Run(() => coordinator.Manager.CreateJobAsync(sources, target, operation, verify, options: options));
+            var job = await coordinator.CreateAsync(sources, target, operation, verify, options);
             if (job.Preflight is { } report) Preflight = $"Ready · {report.FileCount:N0} files · {JobViewModel.Size(report.RequiredBytes + report.SafetyMarginBytes)} needed · {JobViewModel.Size(report.AvailableBytes)} free · {JobViewModel.Size(report.ReservedByQueuedJobsBytes)} planned by other jobs · {report.FileSystem}";
             settings.LastDestination = job.DestinationDirectory; save();
             History = false; coordinator.Schedule(job.Id); Refresh(); Status = "Transfer queued. Existing files are kept with numbered names.";

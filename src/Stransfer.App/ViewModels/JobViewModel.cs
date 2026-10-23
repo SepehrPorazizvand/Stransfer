@@ -18,7 +18,8 @@ public sealed class JobViewModel : ObservableObject
     private bool isDetailed = true;
 
     public Guid Id => job.Id;
-    public string Destination => job.DestinationDirectory;
+    public string Destination => job.DestinationDisplayName ?? job.DestinationDirectory;
+    public string DestinationLocation => job.DestinationDirectory;
     public TransferOperation Operation => job.Operation;
     public string Title => $"{job.Operation} · " + (job.Sources.Count == 1 ? Path.GetFileName(job.Sources[0].TrimEnd('\\', '/')) : $"{job.Sources.Count:N0} items");
     public string OperationHeading => $"{job.Operation}ing {(job.TotalFiles > 0 ? $"{job.TotalFiles:N0} items" : "files")}";

@@ -12,7 +12,7 @@ Launch `dist/Stransfer/Stransfer.exe` for the portable full build, or run `dist/
 - **Background:** optionally keep the app in the tray and start it when signing in. The tray menu opens the queue, pauses transfers, or saves progress and exits.
 - **Resume:** interrupted jobs are retained. On startup or after the original drives reconnect, Stransfer asks before resuming. Drive identity is checked even if the drive letter changed.
 - **Transfer window:** add, drop or paste sources; select a destination; choose Copy/Move; click **Check and transfer**. Existing destinations are kept with numbered names. Pause, Resume, Open destination, Remove and completed History are available.
-- **USB phones:** copy files or folders from the phone in Explorer, open a PC destination folder and press Ctrl+Shift+V. Shell namespace selections (`Shell IDList Array`) use Windows' device provider and its progress/cancel dialog without staging an extra copy on the PC. This device path always copies, keeping phone originals. Device transfers have Windows-managed progress/space checks; they are outside Stransfer's durable queue, SHA-256 verification and restart/resume system. After a disconnect, cancellation or restart, copy/paste the phone selection again. Descriptor-only attachments and phone-to-phone/PC-to-phone destinations are not supported by this path.
+- **USB phones:** unlock the phone and enable File transfer (MTP). Copy/cut files in Explorer, focus a PC or device destination and press Ctrl+Shift+V. Files stream directly through Stransfer's queue with its own progress, Pause/Resume and durable records, without Explorer's copy dialog or a full staging copy. PC-to-device and device-to-device endpoints use the same engine. Writes to sequential-only devices restart the current incomplete file; completed files are retained. Resume to a PC compares the saved prefix and continues from its byte checkpoint. Device writes and moves verify content before commit/source deletion. Providers must expose read/write streams and free-space information for the requested operation. Descriptor-only attachments are not supported.
 
 The built-in Explorer Paste menu, Explorer drag-and-drop, elevated windows and transfers initiated by other applications retain their behavior. Ctrl+Shift+V uses Windows hotkey registration without code injection or a keyboard hook. See [validation](docs/VALIDATION.md) for the tested scope and remaining hardware checks.
 
@@ -22,7 +22,7 @@ Before accepting a job, Stransfer scans the files, validates sources, rejects un
 
 This is a capacity estimate, not an operating-system reservation. Another application, a quota change or a failing/disconnected drive can still stop a transfer. A stopped job retains recoverable progress.
 
-Data is written into job-specific partial files. The journal only records durable offsets after a disk flush. Resume compares the saved prefix against the source. SHA-256 copy verification is enabled by default; disabling it skips the destination readback. Cross-volume moves verify both files before deleting the source. Same-volume moves rename the original file atomically where supported.
+Data is written into job-specific partial files. The journal only records durable offsets after a disk flush. Resume compares the saved prefix against the source. New profiles default to **Fast** copy mode; **Verified** adds SHA-256 destination readback and takes longer. Existing profiles retain their selected verification setting. Cross-volume moves verify both files before deleting the source. Same-volume moves rename the original file atomically where supported. Device copies preserve content and exposed modification times when writing to PC; they do not clone all Windows metadata.
 
 Current limits:
 
@@ -35,7 +35,8 @@ Current limits:
 ## Performance
 
 - Auto uses four workers for files up to 1 MiB only when both local drives report no seek penalty. HDDs, removable drives and uncertain devices use a sequential worker. Manual choices are 1/2/4/8 workers.
-- Large files use bounded pooled buffers with overlapping read/write. Source hashing runs inline.
+- Fast local copies of fresh files at least 8 MiB use CopyFileEx with Stransfer checkpoints and no Windows copy dialog. Stopped partials resume through the prefix-validated streaming engine. Verified copies use bounded pooled buffers with overlapping read/write and inline source hashing. Read-back hashing also uses pooled large blocks.
+- Local checkpoints flush at the first 32 MiB, then at 256 MiB or one second, and on pause/completion. A forced loss can require recopying data after the last durable checkpoint.
 - Small-file workers share durable journal flushes. The immutable file plan is not rewritten for every file.
 - Validated Windows directories are pinned without delete sharing, reducing repeated ancestor checks while protecting their paths during the run.
 - Only one queued job runs at a time to avoid competing disk workloads.

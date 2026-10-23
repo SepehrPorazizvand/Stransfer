@@ -73,7 +73,7 @@ if (-not (Test-Path -LiteralPath $settingsFile)) {
         KeepInBackground = $true
         UseForExplorerPaste = $true
         ExplorerContextMenu = $true
-        VerifyCopies = $true
+        VerifyCopies = $false
         SmallFileWorkers = 0
         LastDestination = ""
     } | ConvertTo-Json | Set-Content -LiteralPath $settingsFile -Encoding utf8
@@ -83,7 +83,7 @@ if (-not (Test-Path -LiteralPath $settingsFile)) {
 $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Stransfer"
 New-Item -Path $uninstallKey -Force | Out-Null
 Set-ItemProperty -Path $uninstallKey -Name "DisplayName" -Value "Stransfer"
-Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.0.0"
+Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.1.0"
 Set-ItemProperty -Path $uninstallKey -Name "Publisher" -Value "Stransfer"
 Set-ItemProperty -Path $uninstallKey -Name "DisplayIcon" -Value "$installedExecutable,0"
 Set-ItemProperty -Path $uninstallKey -Name "InstallLocation" -Value $installDirectory

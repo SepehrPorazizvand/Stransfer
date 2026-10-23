@@ -22,6 +22,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] arguments)
     {
+        if (arguments.Contains("--device-self-test")) return DeviceHardwareTest.Run();
+        if (arguments.Contains("--device-test-cleanup")) return DeviceHardwareTest.Run(cleanup: true);
         if (arguments.Contains("--clipboard-formats"))
         {
             Console.WriteLine(JsonSerializer.Serialize(Clipboard.GetDataObject()?.GetFormats(autoConvert: false) ?? []));

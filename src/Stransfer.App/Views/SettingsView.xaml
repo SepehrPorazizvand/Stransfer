@@ -30,8 +30,8 @@
       <Border Style="{StaticResource Card}">
         <StackPanel>
           <TextBlock Text="Transfer Engine &amp; Integrity" Style="{StaticResource SubHeading}"/>
-          <CheckBox Content="Verify copied data with SHA-256 integrity checks" IsChecked="{Binding VerifyCopies}"/>
-          <TextBlock Text="Re-reads copied files at destination to verify cryptographic checksum against source. Same-volume moves use atomic rename." Style="{StaticResource Hint}"/>
+          <ComboBox ItemsSource="{Binding CopyModes}" SelectedIndex="{Binding CopyModeIndex}" AutomationProperties.Name="Copy mode"/>
+          <TextBlock Text="Fast avoids a full checksum pass. Verified re-reads the destination and takes longer. Both save progress and validate resumed data. Moves and writes to phones always verify content." Style="{StaticResource Hint}" Margin="0,6,0,0"/>
 
           <TextBlock Text="Small-file worker threads" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" FontSize="12" FontWeight="SemiBold"/>
           <ComboBox ItemsSource="{Binding WorkerLabels}" SelectedIndex="{Binding WorkerIndex}" AutomationProperties.Name="Small-file workers"/>

@@ -48,5 +48,5 @@ public sealed class DesktopDialogs(Window owner)
         }
         return files.Length == 0 || sequence != ExplorerPasteService.ClipboardSequence ? null : new(files, move ? TransferOperation.Move : TransferOperation.Copy, sequence);
     }
-    public static void OpenFolder(string path) => Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { path }, UseShellExecute = true });
+    public static void OpenFolder(string path) => Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { TransferStorage.Display(path) }, UseShellExecute = true });
 }

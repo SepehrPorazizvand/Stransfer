@@ -23,6 +23,7 @@ if (args is ["--crash-worker", var workerState, var workerSignal])
 
 var tests = new (string Name, Func<Task> Run)[]
 {
+    ("native fast copy retains checkpoints and resumes its stopped partial", NativeFastCopy),
     ("copy directory, nested content, empty directories, and zero-byte files", CopyTree),
     ("move verifies and removes only a successful source", MoveFile),
     ("same-volume native move preserves named NTFS streams", AtomicMovePreservesNamedStreams),
@@ -56,6 +57,37 @@ var tests = new (string Name, Func<Task> Run)[]
     ("copy preserves creation/modification time and basic attributes", CopyMetadata),
     ("durable publish intent recovers when completion records are lost", LostCompletionRecord),
 };
+
+async Task NativeFastCopy()
+{
+    if (!OperatingSystem.IsWindows()) return;
+    var root = Path.Combine(Path.GetTempPath(), "Stransfer-native-test-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(root);
+    try
+    {
+        var source = Path.Combine(root, "native.bin");
+        using (var file = File.Create(source)) { var block = RandomNumberGenerator.GetBytes(1024 * 1024); for (int i = 0; i < 96; i++) file.Write(block); }
+        Guid id;
+        using (var manager = new TransferManager(Path.Combine(root, "state")))
+        {
+            var job = await manager.CreateJobAsync([source], Path.Combine(root, "output"), verify: false); id = job.Id;
+            using var stop = new CancellationTokenSource();
+            manager.JobChanged += (_, value) => { if (value.Status == TransferStatus.Running && value.BytesTransferred >= 32L * 1024 * 1024) stop.Cancel(); };
+            await manager.RunAsync(id, stop.Token);
+            if (manager.Jobs.Single().Status != TransferStatus.Paused || File.Exists(Path.Combine(root, "output", "native.bin"))) throw new IOException("Native copy did not pause before publish.");
+        }
+        using (var recovered = new TransferManager(Path.Combine(root, "state")))
+        {
+            if (recovered.Jobs.Single().BytesTransferred < 32L * 1024 * 1024) throw new IOException("Native durable checkpoint was lost.");
+            await recovered.RunAsync(id);
+            if (recovered.Jobs.Single().Status != TransferStatus.Completed) throw new IOException(recovered.Jobs.Single().Error);
+        }
+        var expected = SHA256.HashData(File.ReadAllBytes(source));
+        var actual = SHA256.HashData(File.ReadAllBytes(Path.Combine(root, "output", "native.bin")));
+        if (!expected.SequenceEqual(actual)) throw new IOException("Native resumed contents differ.");
+    }
+    finally { Directory.Delete(root, true); }
+}
 
 var failed = 0;
 var selectedTests = args is ["--test", var filter] ? tests.Where(test => test.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToArray() : tests;

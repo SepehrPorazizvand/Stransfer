@@ -1,0 +1,102 @@
+{
+  "timestamp": "2026-10-23T11:27:45.6202479+00:00",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "verification": false,
+  "compareVerification": true,
+  "sourceDrive": "C:\\",
+  "destinationDrive": "D:\\",
+  "rounds": 3,
+  "methodology": "Warm-cache process-level benchmark, rotated order. Includes scan, preflight and journal for Stransfer. Native baseline is File.Copy followed by Flush(true), not Explorer UI. Comparison mode uses no baseline hashing and reports Stransfer verification on/off separately. No cold-cache claims.",
+  "results": [
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 2.4266535,
+      "samplesSeconds": [
+        2.5563453,
+        2.4179519,
+        2.4266535
+      ]
+    },
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Stransfer verification off",
+      "medianSeconds": 2.1143677,
+      "samplesSeconds": [
+        2.1697886,
+        2.0888007,
+        2.1143677
+      ]
+    },
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Stransfer verification on",
+      "medianSeconds": 2.1142029,
+      "samplesSeconds": [
+        2.1142029,
+        2.2811119,
+        2.1136577
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 3.3289035,
+      "samplesSeconds": [
+        3.3261986,
+        3.3289035,
+        3.4895567
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Stransfer verification off",
+      "medianSeconds": 0.5055413,
+      "samplesSeconds": [
+        0.5202349,
+        0.5055413,
+        0.476048
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Stransfer verification on",
+      "medianSeconds": 0.5400957,
+      "samplesSeconds": [
+        0.5383275,
+        0.5765292,
+        0.5400957
+      ]
+    },
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 0.4980394,
+      "samplesSeconds": [
+        0.5183477,
+        0.4828453,
+        0.4980394
+      ]
+    },
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Stransfer verification off",
+      "medianSeconds": 0.7065887,
+      "samplesSeconds": [
+        0.713555,
+        0.698158,
+        0.7065887
+      ]
+    },
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Stransfer verification on",
+      "medianSeconds": 1.3381384,
+      "samplesSeconds": [
+        1.2922731,
+        1.3381384,
+        1.3593386
+      ]
+    }
+  ]
+}

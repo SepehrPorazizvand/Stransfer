@@ -21,8 +21,10 @@ public sealed partial class TransferManager
             if (!state.JournalWriterRunning)
             {
                 state.JournalWriterRunning = true;
+                state.JournalBatchReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 _ = FlushBatchAsync(state);
             }
+            if (state.PendingJournal.Count >= state.EffectiveWorkers) state.JournalBatchReady?.TrySetResult();
         }
         return completion.Task;
     }
@@ -32,7 +34,11 @@ public sealed partial class TransferManager
         while (true)
         {
             // A short coalescing window amortizes journal flushes across small-file workers.
-            await Task.Delay(2).ConfigureAwait(false);
+            // Flush as soon as all active workers have contributed. A timer-only batching
+            // window can round to a Windows timer tick for every group of tiny files.
+            Task ready;
+            lock (state.Sync) ready = state.JournalBatchReady!.Task;
+            await Task.WhenAny(ready, Task.Delay(2)).ConfigureAwait(false);
             lock (state.Sync)
             {
                 var batch = state.PendingJournal.ToArray();
@@ -59,7 +65,9 @@ public sealed partial class TransferManager
                 }
                 catch (Exception error)
                 { foreach (var pending in batch) pending.Completion.TrySetException(error); }
-                if (state.PendingJournal.Count == 0) { state.JournalWriterRunning = false; return; }
+                if (state.PendingJournal.Count == 0) { state.JournalWriterRunning = false; state.JournalBatchReady = null; return; }
+                state.JournalBatchReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (state.PendingJournal.Count >= state.EffectiveWorkers) state.JournalBatchReady.TrySetResult();
             }
         }
     }
