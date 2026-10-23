@@ -1,0 +1,31 @@
+<UserControl x:Class="Stransfer.App.Views.UpdatesView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Border Style="{StaticResource Card}">
+    <StackPanel>
+      <DockPanel>
+        <TextBlock Text="Updates" Style="{StaticResource SubHeading}"/>
+        <TextBlock Text="{Binding CurrentVersion}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Right"/>
+      </DockPanel>
+      <CheckBox Content="Check for new versions automatically" IsChecked="{Binding AutomaticChecks}"/>
+      <TextBlock Text="Downloads need your permission. Updates restart the app without a setup wizard." Style="{StaticResource Hint}"/>
+      <TextBlock x:Name="UpdateStatus" Text="{Binding Status}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,12,0,8"/>
+      <WrapPanel>
+        <Button x:Name="CheckForUpdates" Content="Check for updates" Command="{Binding Check}" IsEnabled="{Binding CanCheck}"/>
+        <Button Content="Download and update" Command="{Binding RequestDownload}" IsEnabled="{Binding CanDownload}" Visibility="{Binding HasUpdate, Converter={StaticResource BoolVisibility}}" Style="{StaticResource Primary}"/>
+      </WrapPanel>
+      <Border Background="{DynamicResource AccentSubtleBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,10,0,0" Visibility="{Binding ConsentVisible, Converter={StaticResource BoolVisibility}}">
+        <StackPanel>
+          <TextBlock Text="Allow update download?" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
+          <TextBlock Text="{Binding ConsentText}" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,10"/>
+          <WrapPanel>
+            <Button Content="Allow download" Command="{Binding AllowDownload}" Style="{StaticResource Primary}"/>
+            <Button Content="Later" Command="{Binding Later}"/>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+      <StackPanel Visibility="{Binding Downloading, Converter={StaticResource BoolVisibility}}" Margin="0,10,0,0">
+        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="6"/>
+        <Button Content="Cancel download" Command="{Binding Cancel}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

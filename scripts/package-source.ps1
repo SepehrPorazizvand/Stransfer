@@ -10,7 +10,7 @@ Add-Type -AssemblyName System.IO.Compression
 $stream = [IO.File]::Open($archive, [IO.FileMode]::Create)
 $zip = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create)
 try {
-    $rootNames = @('README.md', 'Stransfer.slnx', '.gitignore', 'LICENSE', 'LICENSE.md')
+    $rootNames = @('README.md', 'Stransfer.slnx', 'Directory.Build.props', '.gitignore', 'LICENSE', 'LICENSE.md')
     $files = @(Get-ChildItem -LiteralPath $projectRoot -File -Force | Where-Object { $_.Name -in $rootNames })
     foreach ($name in $allowedRoots) {
         $folder = Join-Path $projectRoot $name

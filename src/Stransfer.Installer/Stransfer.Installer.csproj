@@ -8,7 +8,7 @@
     <AssemblyName>StransferSetup</AssemblyName>
     <RootNamespace>Stransfer.Installer</RootNamespace>
     <ApplicationIcon Condition="Exists('../Stransfer.App/Assets/app.ico')">../Stransfer.App/Assets/app.ico</ApplicationIcon>
-    <Version>1.1.3</Version>
+    <Version>$(StransferVersion)</Version>
     <Description>Stransfer Setup</Description>
   </PropertyGroup>
   <ItemGroup>

@@ -33,6 +33,10 @@ try {
     }
 
     $includeRuntime = $SelfContained.IsPresent.ToString().ToLowerInvariant()
+    $resolvedPublish = [IO.Path]::GetFullPath($publishDirectory)
+    $expectedPublish = [IO.Path]::GetFullPath((Join-Path $projectRoot $(if ($SelfContained) { 'dist\Stransfer' } else { 'dist\Stransfer.Slim' })))
+    if ($resolvedPublish -ne $expectedPublish -or -not $resolvedPublish.StartsWith($projectRoot + [IO.Path]::DirectorySeparatorChar)) { throw 'Unexpected publish directory.' }
+    if (Test-Path -LiteralPath $resolvedPublish) { Remove-Item -LiteralPath $resolvedPublish -Recurse -Force }
     & $dotnetCommand publish $appProject --configuration $Configuration --runtime $Runtime --self-contained $includeRuntime --output $publishDirectory '-p:PublishSingleFile=true' '-p:IncludeNativeLibrariesForSelfExtract=true' '-p:DebugType=None' '-p:DebugSymbols=false'
     if ($LASTEXITCODE -ne 0) { throw "Publish failed (exit code $LASTEXITCODE)." }
     $executable = Join-Path $publishDirectory 'Stransfer.exe'
@@ -59,6 +63,9 @@ See the source README and docs/VALIDATION.md for supported features, limits and 
             $payloadZip = Join-Path $projectRoot 'dist\payload.zip'
             Compress-Archive -Path (Join-Path $publishDirectory '*') -DestinationPath $payloadZip -Force
             $installerOut = Join-Path $projectRoot 'dist\InstallerTemp'
+            $resolvedInstallerOut = [IO.Path]::GetFullPath($installerOut)
+            if ($resolvedInstallerOut -ne [IO.Path]::GetFullPath((Join-Path $projectRoot 'dist\InstallerTemp'))) { throw 'Unexpected installer directory.' }
+            if (Test-Path -LiteralPath $resolvedInstallerOut) { Remove-Item -LiteralPath $resolvedInstallerOut -Recurse -Force }
             & $dotnetCommand publish $installerProject --configuration $Configuration --runtime $Runtime --self-contained true --output $installerOut '-p:PublishSingleFile=true' '-p:IncludeNativeLibrariesForSelfExtract=true' '-p:DebugType=None' '-p:DebugSymbols=false'
             if ($LASTEXITCODE -ne 0) { throw "Installer publish failed (exit code $LASTEXITCODE)." }
             if (Test-Path -LiteralPath (Join-Path $installerOut 'StransferSetup.exe')) {

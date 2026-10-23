@@ -1,6 +1,6 @@
 # Validation status
 
-Validated on the development Windows x64 environment; shortcut update on 2026-10-23.
+Validated on the development Windows x64 environment; update/release work on 2026-10-24.
 
 | Check | Result |
 |---|---|
@@ -11,6 +11,8 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 | Sequential abrupt process termination and recovery | Passed with real child-process termination |
 | Parallel abrupt process termination and recovery | Passed; also repeated eight times after fixing transient lock handling |
 | Real WPF resources, layout and bindings | Passed |
+| Permission-based update discovery and validation | Passed: checks request metadata only; stable version gates, manifest matching, SHA-256 failures, ZIP traversal rejection, file replacement and rollback preserve settings |
+| Full EXE update from 1.1.3 to 1.2.0 | Passed in a disposable isolated profile: helper readiness, graceful parent exit, executable replacement, startup acknowledgement and staging/backup cleanup; unrelated files retained |
 | Resume button, copied content and completed history | Passed |
 | Settings/Tools/Shortcuts views, toggle persistence and registration status bindings | Passed |
 | Ctrl+Shift+V registration and WM_HOTKEY dispatch | Passed with a real test-owned HWND; Ctrl+V messages rejected |

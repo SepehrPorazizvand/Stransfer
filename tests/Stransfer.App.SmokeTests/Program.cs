@@ -141,6 +141,11 @@ internal static class Program
             PumpUntil(() => tools.IsCompleted, errors, "Tool state tests did not complete."); tools.GetAwaiter().GetResult();
             var shellCopy = ShellTransferTests.RunAsync(root);
             PumpUntil(() => shellCopy.IsCompleted, errors, "Virtual device copy did not complete."); shellCopy.GetAwaiter().GetResult();
+            var updates = UpdateTests.RunAsync(root);
+            PumpUntil(() => updates.IsCompleted, errors, "Update verification tests did not complete."); updates.GetAwaiter().GetResult();
+            workspace.SelectedIndex = 1; window.UpdateLayout();
+            Invoke(Find<Button>(window, "CheckForUpdates"));
+            PumpUntil(() => Find<TextBlock>(window, "UpdateStatus").Text.Contains("isolated"), errors, "Update page did not respect the isolated profile.");
             workspace.SelectedIndex = 0; window.UpdateLayout();
             Console.WriteLine("PASS  Settings, Tools and Shortcuts tabs, shortcut toggle persistence and registration status bindings");
             var composedSource = Path.Combine(root, "source", "composed.txt");

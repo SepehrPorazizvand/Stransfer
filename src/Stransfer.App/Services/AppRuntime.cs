@@ -22,6 +22,7 @@ public sealed class AppRuntime
     private readonly HashSet<CompactTransferWindow> transferWindows = new();
     internal IReadOnlyCollection<CompactTransferWindow> TransferWindows => transferWindows.ToArray();
     private DateTime nextProbe;
+    private DateTime nextUpdateCheck = DateTime.UtcNow.AddSeconds(10);
     private bool probing, exiting, started;
     public TransferCoordinator Coordinator { get; }
     public MainViewModel ViewModel { get; }
@@ -34,6 +35,7 @@ public sealed class AppRuntime
         Coordinator = new(Path.Combine(store.DirectoryPath, "jobs"));
         dialogs = new(window);
         ViewModel = new(Coordinator, dialogs, settings, SaveSettings, store.DirectoryPath);
+        ViewModel.Settings.Updates = new(settings, SaveSettings, () => !window.IsVisible, ExitAsync, store.DirectoryPath, store.IsIsolated, Notify);
         explorer = new(window, AcceptPasteAsync, ChoosePasteDestinationAsync,
             text => { ViewModel.Status = text; Notify(text); }, ViewModel.Shortcuts.UpdateStatus,
             () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy);
@@ -64,7 +66,7 @@ public sealed class AppRuntime
             RefreshTransferWindows();
         };
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        timer.Tick += async (_, _) => { ViewModel.Refresh(); RefreshTransferWindows(); await ProbeResumeAsync(); };
+        timer.Tick += async (_, _) => { ViewModel.Refresh(); RefreshTransferWindows(); await ProbeResumeAsync(); await ProbeUpdatesAsync(); };
     }
     public async Task StartAsync(bool background, bool promptResume = true)
     {
@@ -166,6 +168,12 @@ public sealed class AppRuntime
         tray.BalloonTipText = text.Length > 250 ? text[..250] : text;
         tray.ShowBalloonTip(4000);
     }
+    private async Task ProbeUpdatesAsync()
+    {
+        if (exiting || store.IsIsolated || !settings.CheckForUpdates || DateTime.UtcNow < nextUpdateCheck) return;
+        nextUpdateCheck = DateTime.UtcNow.AddHours(6);
+        await ViewModel.Settings.Updates!.CheckAsync(automatic: true);
+    }
     public void Reveal() { window.Show(); window.WindowState = WindowState.Normal; window.Activate(); }
     public async Task ExitAsync()
     {
@@ -175,6 +183,6 @@ public sealed class AppRuntime
         try { await Coordinator.StopAsync(); }
         catch (OperationCanceledException) { }
         catch (Exception error) { ViewModel.Status = "Device transfer stopped: " + error.Message; }
-        finally { tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
+        finally { ViewModel.Settings.Updates?.Dispose(); tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
     }
 }

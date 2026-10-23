@@ -16,6 +16,14 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        var applyIndex = Array.IndexOf(e.Args, "--apply-update");
+        if (applyIndex >= 0)
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            var result = applyIndex + 1 < e.Args.Length && Guid.TryParseExact(e.Args[applyIndex + 1], "N", out var updateId)
+                ? await UpdateInstaller.ApplyAsync(new Models.SettingsStore().DirectoryPath, updateId) : 1;
+            Shutdown(result); return;
+        }
         DispatcherUnhandledException += (_, error) =>
         {
             error.Handled = true;
@@ -43,6 +51,12 @@ public partial class App : Application
         }
         else window.Show();
         await window.Runtime.HandleArgumentsAsync(e.Args);
+        var updatedIndex = Array.IndexOf(e.Args, "--updated");
+        if (updatedIndex >= 0 && updatedIndex + 1 < e.Args.Length && Guid.TryParseExact(e.Args[updatedIndex + 1], "N", out var completedId))
+        {
+            try { UpdateInstaller.Acknowledge(new Models.SettingsStore().DirectoryPath, completedId); }
+            catch (Exception error) { window.ViewModel.Status = "Update startup acknowledgement failed: " + error.Message; }
+        }
         SessionEnding += (_, _) => { foreach (var job in window.Runtime.Coordinator.Jobs) window.Runtime.Coordinator.Pause(job.Id); };
     }
     protected override void OnExit(ExitEventArgs e) { instance?.Dispose(); base.OnExit(e); }

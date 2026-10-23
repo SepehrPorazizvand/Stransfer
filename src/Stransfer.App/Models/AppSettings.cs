@@ -11,6 +11,7 @@ public sealed class AppSettings
     public bool VerifyCopies { get; set; }
     public int SmallFileWorkers { get; set; }
     public string LastDestination { get; set; } = "";
+    public bool CheckForUpdates { get; set; } = true;
 }
 
 public sealed class SettingsStore

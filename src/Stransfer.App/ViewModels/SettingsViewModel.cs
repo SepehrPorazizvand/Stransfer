@@ -5,6 +5,7 @@ namespace Stransfer.App.ViewModels;
 
 public sealed class SettingsViewModel(AppSettings settings, Action save) : ObservableObject
 {
+    public UpdateViewModel? Updates { get; internal set; }
     public bool StartWithWindows { get => settings.StartWithWindows; set { if (settings.StartWithWindows == value) return; settings.StartWithWindows = value; Save(); } }
     public bool KeepInBackground { get => settings.KeepInBackground; set { if (settings.KeepInBackground == value) return; settings.KeepInBackground = value; Save(); } }
     public bool UseForExplorerPaste { get => settings.UseForExplorerPaste; set { if (settings.UseForExplorerPaste == value) return; settings.UseForExplorerPaste = value; Save(); } }
