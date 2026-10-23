@@ -1,0 +1,89 @@
+<Window x:Class="Stransfer.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Stransfer.App.Views"
+        Title="Stransfer" Width="960" Height="800" MinWidth="720" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True" DragOver="Window_DragOver" Drop="Window_Drop"
+        Language="en-US" Style="{StaticResource {x:Type Window}}"
+        Icon="pack://application:,,,/Stransfer;component/Assets/app.ico">
+  <Grid Margin="{DynamicResource PagePadding}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header bar with User Logo and Branding -->
+    <DockPanel Margin="0,0,0,16">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button Content="App data" Command="{Binding OpenState}" Padding="12,6"/>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Border Width="40" Height="40" CornerRadius="8" Background="#141720" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0" ClipToBounds="True">
+          <Image Source="pack://application:,,,/Stransfer;component/Assets/app.png" Width="40" Height="40" RenderOptions.BitmapScalingMode="HighQuality"/>
+        </Border>
+        <StackPanel VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Stransfer" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+            <Border Background="{DynamicResource AccentGlowBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="8,2,0,0" VerticalAlignment="Center">
+              <TextBlock Text="PRO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+            </Border>
+          </StackPanel>
+          <TextBlock Text="Windows Explorer Transfer Engine" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+        </StackPanel>
+      </StackPanel>
+    </DockPanel>
+
+    <!-- Main Tabs -->
+    <TabControl x:Name="Workspace" Grid.Row="1">
+      <TabControl.Style>
+        <Style TargetType="TabControl" BasedOn="{StaticResource {x:Type TabControl}}">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding ResumeVisible}" Value="True">
+              <Setter Property="IsEnabled" Value="False"/>
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </TabControl.Style>
+      <TabItem Header="Transfers">
+        <views:TransfersView x:Name="Transfers"/>
+      </TabItem>
+      <TabItem Header="Settings">
+        <views:SettingsView DataContext="{Binding Settings}"/>
+      </TabItem>
+      <TabItem Header="Tools">
+        <views:ToolsView DataContext="{Binding Tools}"/>
+      </TabItem>
+      <TabItem Header="Shortcuts">
+        <views:ShortcutsView DataContext="{Binding Shortcuts}"/>
+      </TabItem>
+    </TabControl>
+
+    <!-- Status Bar Footer -->
+    <Border Grid.Row="2" Background="#11131A" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,7" Margin="0,12,0,0">
+      <DockPanel>
+        <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource AccentBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding Status}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}" VerticalAlignment="Center"/>
+      </DockPanel>
+    </Border>
+
+    <!-- Resume Prompt Overlay -->
+    <Border x:Name="ResumeOverlay" Grid.RowSpan="3" Background="#EE0D0F15" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1.5" CornerRadius="12" Padding="32" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="600" Visibility="{Binding ResumeVisible, Converter={StaticResource BoolVisibility}}">
+      <StackPanel>
+        <DockPanel Margin="0,0,0,12">
+          <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource AccentSubtleBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" Margin="0,0,12,0">
+            <TextBlock Text="↩" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <TextBlock Text="Resume interrupted transfers?" Style="{StaticResource Heading}" VerticalAlignment="Center" Margin="0"/>
+        </DockPanel>
+        <TextBlock Text="{Binding ResumeDetails}" Foreground="{DynamicResource TextBrush}" FontSize="13" Margin="0,0,0,24" TextWrapping="Wrap"/>
+        <WrapPanel HorizontalAlignment="Right">
+          <Button x:Name="ResumeLaterButton" Content="Later" Command="{Binding ResumeLater}" Padding="18,8"/>
+          <Button x:Name="ResumeAllButton" Content="Resume all" Style="{StaticResource Primary}" Command="{Binding ResumeAll}" Padding="22,8"/>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

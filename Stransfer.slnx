@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Stransfer.App/Stransfer.App.csproj" />
+    <Project Path="src/Stransfer.Core/Stransfer.Core.csproj" />
+    <Project Path="src/Stransfer.Installer/Stransfer.Installer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Stransfer.App.SmokeTests/Stransfer.App.SmokeTests.csproj" />
+    <Project Path="tests/Stransfer.Core.Tests/Stransfer.Core.Tests.csproj" />
+    <Project Path="tests/Stransfer.Benchmarks/Stransfer.Benchmarks.csproj" />
+  </Folder>
+</Solution>

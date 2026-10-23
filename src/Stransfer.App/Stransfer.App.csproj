@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Stransfer</AssemblyName>
+    <RootNamespace>Stransfer.App</RootNamespace>
+    <ApplicationIcon Condition="Exists('Assets/app.ico')">Assets/app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Description>Resumable local file transfers for Windows</Description>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Stransfer.Core/Stransfer.Core.csproj" /></ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\app.png" />
+    <Resource Include="Assets\brand.png" />
+  </ItemGroup>
+</Project>

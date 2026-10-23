@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="56" fill="#141720"/>
+  <!-- Top branch curving into arrow -->
+  <path d="M 68 140 H 80 C 80 140 80 100 80 90 C 80 72 94 58 112 58 H 170 V 46 L 210 70 L 170 94 V 82 H 112 C 107 82 104 86 104 90 C 104 96 104 140 104 140 Z" fill="#FE8E4C"/>
+  <!-- Middle pause/flow connectors -->
+  <rect x="94" y="112" width="10" height="32" rx="4" fill="#FE8E4C"/>
+  <rect x="110" y="112" width="10" height="32" rx="4" fill="#FE8E4C"/>
+  <!-- Lower branch looping down and back -->
+  <path d="M 124 116 H 144 C 162 116 176 130 176 148 C 176 166 162 180 144 180 H 68 V 156 H 144 C 148 156 152 152 152 148 C 152 144 148 140 144 140 H 124 Z" fill="#FE8E4C"/>
+</svg>

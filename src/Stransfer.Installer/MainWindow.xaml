@@ -1,0 +1,68 @@
+<Window x:Class="Stransfer.Installer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Stransfer Setup" Height="480" Width="560"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI, -apple-system, sans-serif">
+  <Grid Margin="28">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header with Branding -->
+    <DockPanel Grid.Row="0" Margin="0,0,0,20">
+      <Border Width="48" Height="48" CornerRadius="10" Background="#141720" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,16,0" ClipToBounds="True">
+        <Image Source="pack://application:,,,/Assets/app.png" Width="48" Height="48" RenderOptions.BitmapScalingMode="HighQuality"/>
+      </Border>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="Install Stransfer" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+        <TextBlock Text="Fast, resumable file transfers with Windows Explorer integration" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
+      </StackPanel>
+    </DockPanel>
+
+    <!-- Content / Options -->
+    <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="18">
+      <StackPanel>
+        <TextBlock Text="Destination Folder" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+        <TextBox x:Name="TxtPath" Text="" IsReadOnly="True" Background="#0C0D11" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrush}" Padding="8,6" Margin="0,0,0,16"/>
+
+        <TextBlock Text="Installation Options" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,8"/>
+        <CheckBox x:Name="ChkContextMenu" Content="Add 'Paste with Stransfer' to Explorer right-click menus" IsChecked="True" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+        <CheckBox x:Name="ChkPasteShortcuts" Content="Enable Ctrl+Shift+V for Stransfer (Ctrl+V stays Windows)" IsChecked="True" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+        <CheckBox x:Name="ChkDesktopShortcut" Content="Create Desktop shortcut" IsChecked="True" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+        <CheckBox x:Name="ChkStartMenu" Content="Create Start Menu shortcut" IsChecked="True" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+        <CheckBox x:Name="ChkLaunch" Content="Launch Stransfer after installation" IsChecked="True" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,16"/>
+
+        <!-- Progress bar during install -->
+        <ProgressBar x:Name="PrgProgress" Height="6" Background="#1B202B" Foreground="{DynamicResource AccentBrush}" BorderThickness="0" Visibility="Collapsed" Margin="0,0,0,6"/>
+        <TextBlock x:Name="TxtStatus" Text="Ready to install." Foreground="{DynamicResource MutedBrush}" FontSize="12"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Footer Buttons -->
+    <DockPanel Grid.Row="2" Margin="0,18,0,0">
+      <Button x:Name="BtnCancel" Content="Cancel" Click="Cancel_Click" DockPanel.Dock="Right" Padding="18,8" Background="#1C212B" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Cursor="Hand">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Button.Template>
+      </Button>
+
+      <Button x:Name="BtnInstall" Content="Install" Click="Install_Click" HorizontalAlignment="Right" Margin="0,0,10,0" Padding="24,8" Background="{DynamicResource AccentBrush}" Foreground="#0B0D11" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Button.Template>
+      </Button>
+    </DockPanel>
+  </Grid>
+</Window>

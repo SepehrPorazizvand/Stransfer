@@ -1,0 +1,196 @@
+<UserControl x:Class="Stransfer.App.Views.TransfersView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="0,0,8,0">
+
+      <!-- Transfer Composer Card -->
+      <Border>
+        <Border.Style>
+          <Style TargetType="Border" BasedOn="{StaticResource Card}">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding Busy}" Value="True">
+                <Setter Property="IsEnabled" Value="False"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
+        <StackPanel>
+          <DockPanel Margin="0,0,0,8">
+            <TextBlock Text="New Transfer" Style="{StaticResource SubHeading}" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding SourceSummary}" HorizontalAlignment="Right" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          </DockPanel>
+
+          <!-- Drop zone / Source Selector -->
+          <Border Background="{DynamicResource InputBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,12">
+            <DockPanel>
+              <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                <Button Content="+ Add files" Command="{Binding AddFiles}"/>
+                <Button Content="+ Add folders" Command="{Binding AddFolders}"/>
+                <Button Content="📋 Paste" Command="{Binding Paste}" ToolTip="Paste files from Windows clipboard"/>
+                <Button Content="Clear" Command="{Binding ClearSources}"/>
+              </WrapPanel>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Select or drag files from Explorer" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock Text="Copy or cut files, then click Paste here. Use Ctrl+Shift+V in an Explorer destination folder." Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+
+          <!-- Destination Selector -->
+          <TextBlock Text="Destination folder" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,5" FontSize="12" FontWeight="SemiBold"/>
+          <DockPanel Margin="0,0,0,10">
+            <Button DockPanel.Dock="Right" Content="Browse…" Command="{Binding Browse}" Margin="8,0,0,0" Padding="16,8"/>
+            <TextBox Text="{Binding Destination, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Destination folder" VerticalAlignment="Center"/>
+          </DockPanel>
+
+          <!-- Transfer Options -->
+          <CheckBox Content="Move files (delete source only after copy and hash verification succeed)" IsChecked="{Binding Move}" Margin="0,4,0,8"/>
+
+          <!-- Preflight info -->
+          <Border Background="#141720" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,2,0,12">
+            <DockPanel>
+              <TextBlock Text="ℹ" Foreground="{DynamicResource AccentBrush}" Margin="0,0,8,0" FontWeight="Bold"/>
+              <TextBlock Text="{Binding Preflight}" Foreground="{DynamicResource MutedBrush}" FontSize="12" VerticalAlignment="Center"/>
+            </DockPanel>
+          </Border>
+
+          <DockPanel>
+            <ProgressBar IsIndeterminate="True" Visibility="{Binding Busy, Converter={StaticResource BoolVisibility}}" DockPanel.Dock="Right" Width="180" Height="4" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            <Button x:Name="StartButton" Content="Check and transfer" Command="{Binding Start}" Style="{StaticResource Primary}" HorizontalAlignment="Left" Padding="24,10" FontSize="14"/>
+          </DockPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Queue & History Header -->
+      <DockPanel Margin="0,8,0,12">
+        <WrapPanel DockPanel.Dock="Right">
+          <Button Content="Queue" Command="{Binding ShowQueue}" Padding="14,6"/>
+          <Button x:Name="HistoryTab" Content="History" Command="{Binding ShowHistory}" Padding="14,6"/>
+        </WrapPanel>
+        <TextBlock Text="{Binding QueueTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+      </DockPanel>
+
+      <!-- Transfer Jobs List (Explorer-style cards) -->
+      <ItemsControl x:Name="JobsList" ItemsSource="{Binding Jobs}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Style="{StaticResource ExplorerTransferCard}" Margin="0,0,0,14">
+              <StackPanel>
+
+                <!-- Explorer Transfer Header: Title & Status Badge -->
+                <DockPanel Margin="0,0,0,10">
+                  <!-- Status Pill -->
+                  <Border DockPanel.Dock="Right" Background="#1D2230" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Status}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="11.5"/>
+                  </Border>
+
+                  <StackPanel>
+                    <TextBlock Text="{Binding OperationHeading}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
+                    <TextBlock Text="{Binding Title}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
+                  </StackPanel>
+                </DockPanel>
+
+                <!-- Explorer Live Speed & Remaining Time Hero -->
+                <Grid Margin="0,4,0,10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+
+                  <!-- Left: Large Speed Readout -->
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding SpeedText}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                    <TextBlock Text="{Binding RemainingTimeText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,2,0,0"/>
+                  </StackPanel>
+
+                  <!-- Right: Items Remaining & Percentage -->
+                  <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding PercentText}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Right"/>
+                    <TextBlock Text="{Binding ItemsRemainingText}" Foreground="{DynamicResource MutedBrush}" FontSize="12" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                  </StackPanel>
+                </Grid>
+
+                <!-- Explorer Copy Progress Bar -->
+                <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="8" Margin="0,2,0,10"/>
+
+                <!-- Explorer Speed Curve Graph (visible when running/active) -->
+                <Border Background="#0D0F15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Height="68" Margin="0,4,0,12" ClipToBounds="True">
+                  <Grid>
+                    <!-- Background Grid Lines -->
+                    <Line X1="0" Y1="17" X2="1000" Y2="17" Stroke="#181B26" StrokeThickness="1"/>
+                    <Line X1="0" Y1="34" X2="1000" Y2="34" Stroke="#181B26" StrokeThickness="1"/>
+                    <Line X1="0" Y1="51" X2="1000" Y2="51" Stroke="#181B26" StrokeThickness="1"/>
+
+                    <!-- Filled Speed Area -->
+                    <Polygon Points="{Binding SpeedGraphPoints}" Fill="{DynamicResource SpeedChartFillBrush}"/>
+
+                    <!-- Glowing Top Stroke Line -->
+                    <Polyline Points="{Binding SpeedLinePoints}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2.2"/>
+
+                    <!-- Overlay Labels -->
+                    <TextBlock Text="{Binding SpeedText}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" FontSize="11" Margin="8,6,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <TextBlock Text="{Binding PeakSpeedText}" Foreground="{DynamicResource DimBrush}" FontSize="10.5" Margin="8,0,0,5" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                  </Grid>
+                </Border>
+
+                <!-- Explorer File & Route Details -->
+                <Border Background="#10131B" CornerRadius="6" Padding="12,9" Margin="0,0,0,12">
+                  <StackPanel>
+                    <!-- Current File -->
+                    <DockPanel Margin="0,0,0,4">
+                      <TextBlock Text="Transferring: " Foreground="{DynamicResource DimBrush}" FontSize="12"/>
+                      <TextBlock Text="{Binding CurrentFileName}" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    </DockPanel>
+
+                    <!-- Route -->
+                    <DockPanel Margin="0,0,0,4">
+                      <TextBlock Text="To: " Foreground="{DynamicResource DimBrush}" FontSize="12"/>
+                      <TextBlock Text="{Binding Destination}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    </DockPanel>
+
+                    <!-- Progress Bytes & Files -->
+                    <DockPanel>
+                      <TextBlock Text="Progress: " Foreground="{DynamicResource DimBrush}" FontSize="12"/>
+                      <TextBlock Text="{Binding Progress}" Foreground="{DynamicResource MutedBrush}" FontSize="12"/>
+                    </DockPanel>
+                  </StackPanel>
+                </Border>
+
+                <!-- Action Controls (Explorer style: Pause, Resume, Open folder, Remove) -->
+                <DockPanel>
+                  <WrapPanel HorizontalAlignment="Left">
+                    <Button Content="⏸ Pause" Command="{Binding DataContext.PauseJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanPause, Converter={StaticResource BoolVisibility}}"/>
+                    <Button Content="▶ Resume" Command="{Binding DataContext.ResumeJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanResume, Converter={StaticResource BoolVisibility}}" Style="{StaticResource Primary}"/>
+                    <Button Content="📁 Open destination" Command="{Binding DataContext.OpenJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Destination}"/>
+                    <Button Content="✕ Cancel" Command="{Binding DataContext.RemoveJob, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Id}" Visibility="{Binding CanRemove, Converter={StaticResource BoolVisibility}}"/>
+                  </WrapPanel>
+                </DockPanel>
+
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Empty State -->
+      <Border Background="#10131A" Padding="32" Margin="0,8,0,0">
+        <Border.Style>
+          <Style TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding Jobs.Count}" Value="0">
+                <Setter Property="Visibility" Value="Visible"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
+        <StackPanel HorizontalAlignment="Center">
+          <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,8" Opacity="0.6"/>
+          <TextBlock Text="No active transfers" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
+          <TextBlock Text="Copy files, then use Ctrl+Shift+V in Explorer or drop them above." Style="{StaticResource Hint}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

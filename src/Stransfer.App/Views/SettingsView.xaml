@@ -1,0 +1,43 @@
+<UserControl x:Class="Stransfer.App.Views.SettingsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="0,0,8,0">
+      <TextBlock Text="Settings" Style="{StaticResource Heading}"/>
+
+      <!-- Windows Integration Card -->
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Windows Explorer Integration" Style="{StaticResource SubHeading}"/>
+          <CheckBox Content="Add Paste with Stransfer to Explorer context menus" IsChecked="{Binding ExplorerContextMenu}"/>
+          <TextBlock Text="Right-click a folder or its background. On Windows 11, choose Show more options." Style="{StaticResource Hint}"/>
+
+          <TextBlock Text="Configure Ctrl+Shift+V on the Shortcuts page. Ctrl+V uses Windows paste." Style="{StaticResource Hint}" Margin="0,12,0,0"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Background & System Startup -->
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Background &amp; Startup" Style="{StaticResource SubHeading}"/>
+          <CheckBox Content="Keep running in system tray when window is closed" IsChecked="{Binding KeepInBackground}"/>
+          <TextBlock Text="Transfers continue safely in the background. Use the tray menu icon to pause or save and exit." Style="{StaticResource Hint}"/>
+
+          <CheckBox Content="Start automatically when signing in to Windows" IsChecked="{Binding StartWithWindows}"/>
+          <TextBlock Text="Starts Stransfer in the background so drive reconnects and resume prompts occur automatically." Style="{StaticResource Hint}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Engine & Performance -->
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Transfer Engine &amp; Integrity" Style="{StaticResource SubHeading}"/>
+          <CheckBox Content="Verify copied data with SHA-256 integrity checks" IsChecked="{Binding VerifyCopies}"/>
+          <TextBlock Text="Re-reads copied files at destination to verify cryptographic checksum against source. Same-volume moves use atomic rename." Style="{StaticResource Hint}"/>
+
+          <TextBlock Text="Small-file worker threads" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" FontSize="12" FontWeight="SemiBold"/>
+          <ComboBox ItemsSource="{Binding WorkerLabels}" SelectedIndex="{Binding WorkerIndex}" AutomationProperties.Name="Small-file workers"/>
+          <TextBlock Text="Auto selects 4 workers on high-speed solid-state drives, or 1 worker on rotational hard drives and USB drives to maximize throughput." Style="{StaticResource Hint}" Margin="0,6,0,0"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

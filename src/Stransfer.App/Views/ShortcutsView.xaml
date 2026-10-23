@@ -1,0 +1,29 @@
+<UserControl x:Class="Stransfer.App.Views.ShortcutsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="0,0,8,0">
+      <TextBlock Text="Shortcuts" Style="{StaticResource Heading}"/>
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Ctrl+Shift+V · Paste with Stransfer" Style="{StaticResource SubHeading}"/>
+          <CheckBox x:Name="EnablePasteShortcut" Content="Enable Ctrl+Shift+V" IsChecked="{Binding Settings.UseForExplorerPaste}"/>
+          <TextBlock Text="Copy or cut files, focus the destination folder in Explorer, then press Ctrl+Shift+V. Space is checked before starting." Style="{StaticResource Hint}"/>
+          <TextBlock Text="If a destination cannot be identified, Stransfer opens so you can choose one. Keep Stransfer running in the tray to use this shortcut." Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+          <TextBlock x:Name="ShortcutStatus" Text="{Binding Status}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,14,0,8"/>
+          <Button x:Name="RetryShortcut" Content="Retry shortcut registration" Command="{Binding Retry}" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Ctrl+V · Windows paste" Style="{StaticResource SubHeading}"/>
+          <TextBlock Text="Uses the default Windows paste. Shift+Insert also keeps its normal behavior." Style="{StaticResource Hint}"/>
+        </StackPanel>
+      </Border>
+      <Border Style="{StaticResource Card}">
+        <StackPanel>
+          <TextBlock Text="Copy and move" Style="{StaticResource SubHeading}"/>
+          <TextBlock Text="Ctrl+C copies. Ctrl+X cuts. Ctrl+Shift+V uses that choice for Stransfer. Cross-drive moves verify the copy before deleting the source." Style="{StaticResource Hint}"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

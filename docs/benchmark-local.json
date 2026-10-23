@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-10-22T20:55:22.0627308+00:00",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "verification": false,
+  "rounds": 3,
+  "methodology": "Local temporary directory; warm-cache process-level benchmark. Includes scan, preflight and journal for Stransfer. Native baseline is File.Copy followed by Flush(true), not the Explorer UI. No cold-cache or physical-drive claims.",
+  "results": [
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 2.9959591,
+      "samplesSeconds": [
+        3.0741025,
+        2.8056261,
+        2.9959591
+      ]
+    },
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Stransfer 1 worker",
+      "medianSeconds": 4.182629,
+      "samplesSeconds": [
+        4.3918711,
+        4.1811441,
+        4.182629
+      ]
+    },
+    {
+      "workload": "1000 \u00D7 1 KiB",
+      "engine": "Stransfer 4 workers",
+      "medianSeconds": 3.5433236,
+      "samplesSeconds": [
+        3.4139084,
+        3.5433236,
+        3.6862023
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 3.5968688,
+      "samplesSeconds": [
+        3.6094549,
+        3.5968688,
+        1.4690348
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Stransfer 1 worker",
+      "medianSeconds": 1.1515464,
+      "samplesSeconds": [
+        1.202846,
+        1.1515464,
+        1.0708793
+      ]
+    },
+    {
+      "workload": "200 \u00D7 64 KiB",
+      "engine": "Stransfer 4 workers",
+      "medianSeconds": 0.7590594,
+      "samplesSeconds": [
+        0.7344581,
+        0.7590594,
+        0.778605
+      ]
+    },
+    {
+      "workload": "1 \u00D7 128 MiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 0.1403587,
+      "samplesSeconds": [
+        0.1396208,
+        0.1439456,
+        0.1403587
+      ]
+    },
+    {
+      "workload": "1 \u00D7 128 MiB",
+      "engine": "Stransfer 1 worker",
+      "medianSeconds": 0.188483,
+      "samplesSeconds": [
+        0.1736579,
+        0.188483,
+        0.2015935
+      ]
+    },
+    {
+      "workload": "1 \u00D7 128 MiB",
+      "engine": "Stransfer 4 workers",
+      "medianSeconds": 0.1929336,
+      "samplesSeconds": [
+        0.1931308,
+        0.1929336,
+        0.1748144
+      ]
+    }
+  ]
+}

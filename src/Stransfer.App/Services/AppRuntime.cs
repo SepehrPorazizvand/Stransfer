@@ -1,0 +1,141 @@
+using System.Windows;
+using System.Windows.Threading;
+using Stransfer.App.Models;
+using Stransfer.App.ViewModels;
+using Stransfer.Core;
+using Forms = System.Windows.Forms;
+
+namespace Stransfer.App.Services;
+
+public sealed class AppRuntime
+{
+    private readonly Window window;
+    private readonly SettingsStore store = new();
+    private readonly AppSettings settings;
+    private readonly Forms.NotifyIcon tray;
+    private readonly DispatcherTimer timer;
+    private readonly ExplorerPasteService explorer;
+    private readonly DesktopDialogs dialogs;
+    private readonly HashSet<Guid> prompted = new();
+    private readonly Dictionary<Guid, uint> cutClipboard = new();
+    private DateTime nextProbe;
+    private bool probing, exiting, started;
+    public TransferCoordinator Coordinator { get; }
+    public MainViewModel ViewModel { get; }
+    public bool KeepInBackground => settings.KeepInBackground;
+    public bool IsExiting => exiting;
+    public AppRuntime(Window window)
+    {
+        this.window = window;
+        settings = store.Load();
+        Coordinator = new(Path.Combine(store.DirectoryPath, "jobs"));
+        dialogs = new(window);
+        ViewModel = new(Coordinator, dialogs, settings, SaveSettings, store.DirectoryPath);
+        explorer = new(window, AcceptPasteAsync, ViewModel.PreparePaste,
+            text => { ViewModel.Status = text; Notify(text); Reveal(); }, ViewModel.Shortcuts.UpdateStatus,
+            () => !exiting && !dialogs.IsOpen && !ViewModel.ResumeVisible && !ViewModel.Busy);
+        ViewModel.Shortcuts.RetryRequested += SaveSettings;
+        ViewModel.RevealRequested += Reveal;
+        tray = new Forms.NotifyIcon { Text = "Stransfer — resumable file transfers", Visible = true };
+        try { tray.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!); } catch { tray.Icon = System.Drawing.SystemIcons.Application; }
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add("Open Stransfer", null, (_, _) => window.Dispatcher.BeginInvoke(Reveal));
+        menu.Items.Add("Pause all transfers", null, (_, _) => window.Dispatcher.BeginInvoke(() => { foreach (var job in Coordinator.Jobs) { prompted.Add(job.Id); Coordinator.Pause(job.Id); } }));
+        menu.Items.Add("Save progress and exit", null, (_, _) => window.Dispatcher.BeginInvoke(async () => await ExitAsync()));
+        tray.ContextMenuStrip = menu;
+        tray.DoubleClick += (_, _) => window.Dispatcher.BeginInvoke(Reveal);
+        tray.BalloonTipClicked += (_, _) => window.Dispatcher.BeginInvoke(Reveal);
+        Coordinator.Finished += (_, job) =>
+        {
+            prompted.Add(job.Id);
+            if (job.Status == TransferStatus.WaitingForDrive) prompted.Remove(job.Id);
+            if (job.Status == TransferStatus.Completed && cutClipboard.Remove(job.Id, out var sequence) && sequence == ExplorerPasteService.ClipboardSequence)
+            { try { System.Windows.Clipboard.Clear(); } catch (System.Runtime.InteropServices.ExternalException) { } }
+            if (job.Status is TransferStatus.Completed or TransferStatus.Failed or TransferStatus.WaitingForDrive)
+                Notify(job.Status == TransferStatus.Completed ? "Transfer completed." : job.Error ?? "Transfer paused.");
+            ViewModel.Refresh();
+        };
+        timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        timer.Tick += async (_, _) => { ViewModel.Refresh(); await ProbeResumeAsync(); };
+    }
+    public async Task StartAsync(bool background)
+    {
+        if (started) return; started = true;
+        SaveSettings(); ViewModel.Refresh(); timer.Start();
+        if (background) window.Hide();
+        if (store.LoadWarning is { } warning) ViewModel.Status = warning;
+        if (Coordinator.Manager.RecoveryWarnings.Count > 0) ViewModel.Status = string.Join("\n", Coordinator.Manager.RecoveryWarnings);
+        await ProbeResumeAsync();
+    }
+    private void SaveSettings()
+    {
+        try
+        {
+            store.Save(settings);
+            WindowsRegistration.Apply(settings, store.IsIsolated);
+            explorer?.SetEnabled(settings.UseForExplorerPaste && !store.IsIsolated);
+            if (store.IsIsolated) ViewModel.Shortcuts.UpdateStatus(false, "Disabled in the isolated test profile.");
+        }
+        catch (Exception error) { if (ViewModel is not null) ViewModel.Status = "Settings could not be fully applied: " + error.Message; }
+    }
+    public async Task HandleArgumentsAsync(string[] arguments)
+    {
+        if (arguments.Contains("--exit")) { await ExitAsync(); return; }
+        if (!arguments.Contains("--paste"))
+        {
+            var sources = arguments.Where(path => !path.StartsWith("--", StringComparison.Ordinal)
+                && (File.Exists(path) || Directory.Exists(path))).ToArray();
+            if (sources.Length > 0) ViewModel.PreparePaste(new(sources, TransferOperation.Copy, 0));
+            else if (!arguments.Contains("--background")) Reveal();
+            return;
+        }
+        try
+        {
+            var index = Array.IndexOf(arguments, "--destination");
+            if (index < 0 || index + 1 >= arguments.Length) throw new ArgumentException("A destination folder is required.");
+            var clip = DesktopDialogs.ReadClipboard() ?? throw new IOException("Copy or cut files in Explorer first.");
+            await AcceptPasteAsync(clip, arguments[index + 1]);
+        }
+        catch (Exception error) { ViewModel.Report(error); }
+    }
+    private async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
+    {
+        if (exiting) throw new IOException("Stransfer is shutting down. Paste again after restarting it.");
+        var id = await ViewModel.CreateAndScheduleAsync(clipboard.Sources, destination, clipboard.Operation);
+        prompted.Add(id);
+        if (clipboard.Operation == TransferOperation.Move) cutClipboard[id] = clipboard.Sequence;
+        Notify("Transfer queued. Double-click the tray icon to see progress.");
+    }
+    private async Task ProbeResumeAsync()
+    {
+        if (probing || exiting || dialogs.IsOpen || ViewModel.ResumeVisible || DateTime.UtcNow < nextProbe) return;
+        nextProbe = DateTime.UtcNow.AddSeconds(3); probing = true;
+        try
+        {
+            var jobs = Coordinator.Jobs.Where(job => job.CanResume && !Coordinator.IsScheduled(job.Id)).ToArray();
+            var availability = await Task.Run(() => jobs.Select(job => (Job: job, Ready: Coordinator.Manager.AreDrivesAvailable(job.Id))).ToArray());
+            if (exiting) return;
+            foreach (var item in availability.Where(item => !item.Ready)) prompted.Remove(item.Job.Id);
+            var ready = availability.Where(item => item.Ready && !prompted.Contains(item.Job.Id) && !Coordinator.IsScheduled(item.Job.Id)).Select(item => item.Job).ToArray();
+            foreach (var job in ready) prompted.Add(job.Id);
+            if (ready.Length > 0) ViewModel.ShowResume(ready);
+        }
+        catch (Exception error) { ViewModel.Status = "Drive check failed: " + error.Message; }
+        finally { probing = false; }
+    }
+    private void Notify(string text)
+    {
+        if (exiting) return;
+        tray.BalloonTipTitle = "Stransfer";
+        tray.BalloonTipText = text.Length > 250 ? text[..250] : text;
+        tray.ShowBalloonTip(4000);
+    }
+    public void Reveal() { window.Show(); window.WindowState = WindowState.Normal; window.Activate(); }
+    public async Task ExitAsync()
+    {
+        if (exiting) return; exiting = true;
+        timer.Stop(); explorer.Dispose(); ViewModel.Status = "Saving progress…";
+        try { await Coordinator.StopAsync(); }
+        finally { tray.Visible = false; tray.Dispose(); Coordinator.Dispose(); System.Windows.Application.Current.Shutdown(); }
+    }
+}
