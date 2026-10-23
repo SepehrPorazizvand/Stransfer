@@ -16,6 +16,8 @@ public sealed partial class TransferManager : IDisposable
     private readonly Dictionary<Guid, JobState> _jobs = [];
     private readonly List<string> _recoveryWarnings = [];
     internal Func<string, StorageSpace> ReadSpace { get; set; } = StorageProbe.Read;
+    internal long NativeCheckpointBytes { get; set; } = 256L * 1024 * 1024;
+    internal long NativeUnbufferedThreshold { get; set; } = 256L * 1024 * 1024;
     private bool _disposed;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly StringComparison PathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
@@ -170,7 +172,7 @@ public sealed partial class TransferManager : IDisposable
             }
             var workers = WorkerCount(state);
             state.EffectiveWorkers = workers;
-            var smallFiles = state.Files.Where(file => !file.Completed && file.Length <= 1024 * 1024).ToArray();
+            var smallFiles = state.Files.Where(file => !file.Completed && file.Length < 8L * 1024 * 1024).ToArray();
             if (workers > 1 && smallFiles.Length > 1)
                 await Parallel.ForEachAsync(smallFiles, new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = token },
                     async (file, workerToken) =>
@@ -178,6 +180,9 @@ public sealed partial class TransferManager : IDisposable
                         lock (state.Sync) state.CurrentFile = file.Source;
                         await TransferWithRetryAsync(state, file, workerToken).ConfigureAwait(false);
                     }).ConfigureAwait(false);
+            // Only one file is active in the following phase. Waiting for a multi-worker
+            // journal batch here adds a timer delay to every photo and medium-size file.
+            state.EffectiveWorkers = 1;
             foreach (var file in state.Files)
             {
                 token.ThrowIfCancellationRequested();

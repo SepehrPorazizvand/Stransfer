@@ -24,6 +24,7 @@ if (args is ["--crash-worker", var workerState, var workerSignal])
 var tests = new (string Name, Func<Task> Run)[]
 {
     ("native fast copy retains checkpoints and resumes its stopped partial", NativeFastCopy),
+    ("fast large-file batch pauses and recovers without changing contents", FastLargeBatchRecovery),
     ("copy directory, nested content, empty directories, and zero-byte files", CopyTree),
     ("move verifies and removes only a successful source", MoveFile),
     ("same-volume native move preserves named NTFS streams", AtomicMovePreservesNamedStreams),
@@ -58,6 +59,28 @@ var tests = new (string Name, Func<Task> Run)[]
     ("durable publish intent recovers when completion records are lost", LostCompletionRecord),
 };
 
+static async Task FastLargeBatchRecovery()
+{
+    using var sandbox = new Sandbox();
+    for (int index = 0; index < 6; index++) await WriteData(Path.Combine(sandbox.Source, $"large-{index}.bin"), 20 * 1024 * 1024 + 123, index);
+    Guid id;
+    using (var manager = new TransferManager(sandbox.State))
+    {
+        manager.NativeUnbufferedThreshold = 0;
+        var job = await manager.CreateJobAsync([sandbox.Source], sandbox.Destination, verify: false,
+            options: new TransferOptions { SmallFileWorkers = 4 }); id = job.Id;
+        manager.JobChanged += (_, progress) => { if (progress.Status == TransferStatus.Running && progress.BytesTransferred >= 2L * 1024 * 1024) manager.Pause(id); };
+        await manager.RunAsync(id);
+        Equal(TransferStatus.Paused, GetJob(manager, id).Status);
+        Require(GetJob(manager, id).BytesTransferred > 0, "Large-file batch pause did not retain progress.");
+        Equal(6, Directory.EnumerateFiles(sandbox.Source).Count());
+    }
+    using var recovered = new TransferManager(sandbox.State);
+    await recovered.RunAsync(id);
+    Equal(TransferStatus.Completed, GetJob(recovered, id).Status, GetJob(recovered, id).Error);
+    foreach (var source in Directory.EnumerateFiles(sandbox.Source)) await EqualFiles(source, Path.Combine(sandbox.Destination, "source", Path.GetFileName(source)));
+}
+
 async Task NativeFastCopy()
 {
     if (!OperatingSystem.IsWindows()) return;
@@ -66,10 +89,11 @@ async Task NativeFastCopy()
     try
     {
         var source = Path.Combine(root, "native.bin");
-        using (var file = File.Create(source)) { var block = RandomNumberGenerator.GetBytes(1024 * 1024); for (int i = 0; i < 96; i++) file.Write(block); }
+        using (var file = File.Create(source)) { var block = RandomNumberGenerator.GetBytes(1024 * 1024); for (int i = 0; i < 96; i++) file.Write(block); file.Write(block.AsSpan(0, 123)); }
         Guid id;
         using (var manager = new TransferManager(Path.Combine(root, "state")))
         {
+            manager.NativeCheckpointBytes = 32L * 1024 * 1024; // Deterministic checkpoint inside this short test file.
             var job = await manager.CreateJobAsync([source], Path.Combine(root, "output"), verify: false); id = job.Id;
             using var stop = new CancellationTokenSource();
             manager.JobChanged += (_, value) => { if (value.Status == TransferStatus.Running && value.BytesTransferred >= 32L * 1024 * 1024) stop.Cancel(); };
@@ -85,6 +109,47 @@ async Task NativeFastCopy()
         var expected = SHA256.HashData(File.ReadAllBytes(source));
         var actual = SHA256.HashData(File.ReadAllBytes(Path.Combine(root, "output", "native.bin")));
         if (!expected.SequenceEqual(actual)) throw new IOException("Native resumed contents differ.");
+        Guid earlyId; long earlyBytes;
+        using (var early = new TransferManager(Path.Combine(root, "early-state")))
+        {
+            early.NativeUnbufferedThreshold = 0; // Exercise unbuffered I/O, including the unaligned final block.
+            early.NativeCheckpointBytes = long.MaxValue; // Pause before any periodic checkpoint can run.
+            earlyId = (await early.CreateJobAsync([source], Path.Combine(root, "early-output"), verify: false)).Id;
+            using var stop = new CancellationTokenSource();
+            early.JobChanged += (_, value) => { if (value.Status == TransferStatus.Running && value.BytesTransferred > 0) stop.Cancel(); };
+            await early.RunAsync(earlyId, stop.Token);
+            var snapshot = early.Jobs.Single(); earlyBytes = snapshot.BytesTransferred;
+            if (snapshot.Status != TransferStatus.Paused || earlyBytes <= 0 || earlyBytes >= snapshot.TotalBytes)
+                throw new IOException("The native copy did not pause inside its first checkpoint interval.");
+        }
+        using (var early = new TransferManager(Path.Combine(root, "early-state")))
+        {
+            if (early.Jobs.Single().BytesTransferred != earlyBytes) throw new IOException("Pause lost the native bytes written before the periodic checkpoint.");
+            await early.RunAsync(earlyId);
+            if (early.Jobs.Single().Status != TransferStatus.Completed) throw new IOException(early.Jobs.Single().Error);
+            using var output = File.OpenRead(Path.Combine(root, "early-output", "native.bin"));
+            if (!expected.SequenceEqual(SHA256.HashData(output))) throw new IOException("Early native pause/resume changed file contents.");
+        }
+        using (var direct = new TransferManager(Path.Combine(root, "direct-state")))
+        {
+            direct.NativeUnbufferedThreshold = 0;
+            var copied = Path.Combine(root, "direct-output", "native.bin");
+            File.SetAttributes(source, FileAttributes.ReadOnly);
+            try
+            {
+                var directId = (await direct.CreateJobAsync([source], Path.Combine(root, "direct-output"), verify: false)).Id;
+                await direct.RunAsync(directId);
+                if (direct.Jobs.Single().Status != TransferStatus.Completed) throw new IOException(direct.Jobs.Single().Error);
+                using var output = File.OpenRead(copied);
+                if (!expected.SequenceEqual(SHA256.HashData(output))) throw new IOException("Unbuffered native copy changed file contents.");
+                if ((File.GetAttributes(copied) & FileAttributes.ReadOnly) == 0) throw new IOException("Native copy lost the source read-only attribute.");
+            }
+            finally
+            {
+                File.SetAttributes(source, FileAttributes.Normal);
+                if (File.Exists(copied)) File.SetAttributes(copied, FileAttributes.Normal);
+            }
+        }
     }
     finally { Directory.Delete(root, true); }
 }
@@ -653,7 +718,9 @@ static async Task Fat32Limit()
 static async Task ParallelSmallFiles()
 {
     using var sandbox = new Sandbox();
-    for (var index = 0; index < 250; index++) await File.WriteAllTextAsync(Path.Combine(sandbox.Source, $"file-{index:D4}.txt"), $"File {index}: " + new string((char)('a' + index % 26), index * 3));
+    for (var index = 0; index < 250; index++)
+        if (index % 25 == 0) await WriteData(Path.Combine(sandbox.Source, $"file-{index:D4}.bin"), 3 * 1024 * 1024 + index, index);
+        else await File.WriteAllTextAsync(Path.Combine(sandbox.Source, $"file-{index:D4}.txt"), $"File {index}: " + new string((char)('a' + index % 26), index * 3));
     Guid id;
     using (var manager = new TransferManager(sandbox.State))
     {
@@ -673,7 +740,7 @@ static async Task ParallelSmallFiles()
 static async Task ParallelPause()
 {
     using var sandbox = new Sandbox();
-    for (var index = 0; index < 40; index++) await WriteData(Path.Combine(sandbox.Source, $"part-{index}.bin"), 256 * 1024, index);
+    for (var index = 0; index < 40; index++) await WriteData(Path.Combine(sandbox.Source, $"part-{index}.bin"), index % 4 == 0 ? 3 * 1024 * 1024 + 123 : 256 * 1024, index);
     Guid id;
     using (var manager = new TransferManager(sandbox.State))
     {

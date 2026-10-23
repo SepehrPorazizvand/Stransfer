@@ -7,6 +7,13 @@ var reportPath = args.FirstOrDefault(argument => !argument.StartsWith("--"));
 bool verify = args.Contains("--verify");
 bool compareVerification = args.Contains("--compare-verification");
 string? Option(string name) { var index = Array.IndexOf(args, name); return index >= 0 && index + 1 < args.Length ? args[index + 1] : null; }
+if (Option("--source") is { } realSource)
+{
+    if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("The real-folder comparison uses the Windows Shell copy engine.");
+    await CameraBenchmark.RunAsync(realSource, Option("--destination-root") ?? throw new ArgumentException("Specify --destination-root."),
+        reportPath ?? throw new ArgumentException("Specify a report path as the first argument."));
+    return;
+}
 var root = Path.Combine(Path.GetTempPath(), "Stransfer-benchmark", Guid.NewGuid().ToString("N"));
 var destinationRoot = Path.Combine(Option("--destination-root") ?? root, "Stransfer-benchmark-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -14,7 +21,8 @@ Directory.CreateDirectory(destinationRoot);
 var results = new List<object>();
 try
 {
-    foreach (var workload in new[] { (Name: "1000 × 1 KiB", Count: 1000, Size: 1024), (Name: "200 × 64 KiB", Count: 200, Size: 64 * 1024), (Name: "1 × 512 MiB", Count: 1, Size: 512 * 1024 * 1024) })
+    foreach (var workload in new[] { (Name: "1000 × 1 KiB", Count: 1000, Size: 1024), (Name: "200 × 64 KiB", Count: 200, Size: 64 * 1024), (Name: "1 × 512 MiB", Count: 1, Size: 512 * 1024 * 1024) }
+        .Where(workload => !args.Contains("--large-only") || workload.Count == 1))
     {
         var source = Directory.CreateDirectory(Path.Combine(root, Guid.NewGuid().ToString("N"), "source")).FullName;
         var block = new byte[Math.Min(workload.Size, 1024 * 1024)]; Random.Shared.NextBytes(block);

@@ -19,6 +19,8 @@ internal static class CompactTransferTests
         using (var stream = File.Create(source)) stream.SetLength(96L * 1024 * 1024);
         var destination = Path.Combine(root, "compact-output"); Directory.CreateDirectory(destination);
         var runtime = main.Runtime;
+        var previousVerification = main.ViewModel.Settings.VerifyCopies;
+        main.ViewModel.Settings.VerifyCopies = true; // The streaming path checkpoints this 96 MiB UI fixture at 32 MiB.
         using var released = new ManualResetEventSlim();
         int blocked = 0;
         EventHandler<TransferJobSnapshot> hold = (_, snapshot) =>
@@ -37,6 +39,7 @@ internal static class CompactTransferTests
             paste.GetAwaiter().GetResult();
             Require(!main.IsVisible && compact.IsVisible && compact.Width == 480 && compact.Height == 330,
                 "Shortcut paste opened the dashboard or used the wrong compact dimensions.");
+            Require(compact.ViewModel.StatusDetail.Contains("Verified"), "Compact progress hid the job's actual verification mode.");
             var id = compact.ViewModel.JobId!.Value;
             Pump(() => compact.ViewModel.Job.CanPause);
             compact.ViewModel.Pause.Execute(null); released.Set();
@@ -50,6 +53,7 @@ internal static class CompactTransferTests
             compact.Close();
             Require(runtime.TransferWindows.Count == 0 && !main.IsVisible, "Closing progress revealed the dashboard or leaked a window.");
             Pump(() => runtime.Coordinator.Jobs.Single(job => job.Id == id).Status == TransferStatus.Completed);
+            main.ViewModel.Settings.VerifyCopies = false;
             Require(new FileInfo(Path.Combine(destination, "compact.bin")).Length == 96L * 1024 * 1024,
                 "Closing the compact window canceled the resumed transfer.");
 
@@ -58,6 +62,7 @@ internal static class CompactTransferTests
             Pump(() => second.IsCompleted); second.GetAwaiter().GetResult();
             var completed = runtime.TransferWindows.Single();
             Pump(() => completed.ViewModel.Job.IsCompleted);
+            Require(completed.ViewModel.StatusDetail.Contains("Fast"), "Fast jobs were mislabeled in compact progress.");
             Require(!main.IsVisible && completed.ViewModel.Job.Percent == 100, "Completion opened the dashboard or lost progress.");
             completed.UpdateLayout(); Save(completed, "compact-completed.png"); completed.Close();
 
@@ -72,6 +77,7 @@ internal static class CompactTransferTests
         finally
         {
             released.Set(); runtime.Coordinator.Manager.JobChanged -= hold;
+            main.ViewModel.Settings.VerifyCopies = previousVerification;
             foreach (var compact in runtime.TransferWindows.ToArray()) compact.Close();
         }
     }

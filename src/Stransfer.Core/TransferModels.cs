@@ -5,7 +5,7 @@ public enum TransferStatus { Queued, Scanning, Running, Paused, WaitingForDrive,
 
 public sealed record TransferOptions
 {
-    /// <summary>0 detects non-seeking local drives; otherwise use 1, 2, 4 or 8 workers for files up to 1 MiB.</summary>
+    /// <summary>0 detects non-seeking local drives; otherwise use 1, 2, 4 or 8 workers for files below 8 MiB.</summary>
     public int SmallFileWorkers { get; init; }
 }
 

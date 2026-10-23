@@ -21,6 +21,7 @@ public sealed class JobViewModel : ObservableObject
     public string Destination => job.DestinationDisplayName ?? job.DestinationDirectory;
     public string DestinationLocation => job.DestinationDirectory;
     public TransferOperation Operation => job.Operation;
+    public string CopyMode => job.Operation == TransferOperation.Move ? "Safe move" : job.Verify ? "Verified" : "Fast";
     public string Title => $"{job.Operation} · " + (job.Sources.Count == 1 ? Path.GetFileName(job.Sources[0].TrimEnd('\\', '/')) : $"{job.Sources.Count:N0} items");
     public string OperationHeading => $"{(job.Operation == TransferOperation.Move ? "Moving" : "Copying")} {(job.TotalFiles > 0 ? $"{job.TotalFiles:N0} {(job.TotalFiles == 1 ? "item" : "items")}" : "files")}";
     public string Route => string.Join(" + ", job.Sources.Take(2)) + (job.Sources.Count > 2 ? $" (+{job.Sources.Count - 2})" : "") + " → " + Destination;

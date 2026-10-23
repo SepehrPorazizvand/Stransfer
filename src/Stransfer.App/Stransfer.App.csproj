@@ -9,7 +9,7 @@
     <AssemblyName>Stransfer</AssemblyName>
     <RootNamespace>Stransfer.App</RootNamespace>
     <ApplicationIcon Condition="Exists('Assets/app.ico')">Assets/app.ico</ApplicationIcon>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Description>Resumable filesystem and device transfers for Windows</Description>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../Stransfer.Core/Stransfer.Core.csproj" /></ItemGroup>

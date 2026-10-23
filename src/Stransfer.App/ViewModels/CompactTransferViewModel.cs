@@ -15,6 +15,7 @@ public sealed class CompactTransferViewModel : ObservableObject
     public string Message => message;
     public string Heading => HasJob ? Job.OperationHeading : preparing ? "Preparing transfer…" : "Transfer could not start";
     public string WindowTitle => HasJob ? $"{Job.PercentText} · Stransfer" : "Stransfer";
+    public string StatusDetail => $"{Job.Status} · {Job.CopyMode}";
     public string CurrentFile => Job.IsCompleted ? "Transfer complete" : Job.IsPaused ? "Transfer paused"
         : Job.IsWaitingForDrive ? "Reconnect the original device" : Job.IsFailed ? "Transfer needs attention" : Job.CurrentFileName;
     public RelayCommand Pause { get; }

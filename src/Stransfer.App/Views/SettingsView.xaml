@@ -35,7 +35,7 @@
 
           <TextBlock Text="Small-file worker threads" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" FontSize="12" FontWeight="SemiBold"/>
           <ComboBox ItemsSource="{Binding WorkerLabels}" SelectedIndex="{Binding WorkerIndex}" AutomationProperties.Name="Small-file workers"/>
-          <TextBlock Text="Auto selects 4 workers on high-speed solid-state drives, or 1 worker on rotational hard drives and USB drives to maximize throughput." Style="{StaticResource Hint}" Margin="0,6,0,0"/>
+          <TextBlock Text="Auto: 4 photo/small-file workers on SSDs; 1 on HDDs and USB drives. Large files copy one at a time." Style="{StaticResource Hint}" Margin="0,6,0,0"/>
         </StackPanel>
       </Border>
     </StackPanel>

@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-10-23T12:25:45.59181+00:00",
+  "source": "Desktop/Camera",
+  "sourceDrive": "C:\\",
+  "destinationDrive": "D:\\",
+  "files": 313,
+  "bytes": 11731399487,
+  "rounds": 2,
+  "verified": true,
+  "methodology": "Actual folder; Windows IFileOperation Shell copy engine versus Stransfer Fast. Sequential runs, order reversed in round 2. OS cache not cleared; background activity uncontrolled. Windows Shell can finish with cached writes; Stransfer flushes data before durable publication. SHA-256 verification of both final outputs is outside timing. No source files changed; only unique benchmark directories cleaned.",
+  "samples": [
+    {
+      "Round": 1,
+      "Engine": "Windows Shell",
+      "Seconds": 26.3590269,
+      "MiBPerSecond": 424.44413554027506
+    },
+    {
+      "Round": 1,
+      "Engine": "Stransfer Fast",
+      "Seconds": 31.1846381,
+      "MiBPerSecond": 358.76428485002543
+    },
+    {
+      "Round": 2,
+      "Engine": "Stransfer Fast",
+      "Seconds": 29.6108696,
+      "MiBPerSecond": 377.8320102511733
+    },
+    {
+      "Round": 2,
+      "Engine": "Windows Shell",
+      "Seconds": 26.3189519,
+      "MiBPerSecond": 425.09042262634165
+    }
+  ],
+  "averageSeconds": {
+    "Windows Shell": 26.3389894,
+    "Stransfer Fast": 30.39775385
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-10-23T12:01:11.9903792+00:00",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "verification": false,
+  "compareVerification": true,
+  "sourceDrive": "C:\\",
+  "destinationDrive": "D:\\",
+  "rounds": 3,
+  "methodology": "Warm-cache process-level benchmark, rotated order. Includes scan, preflight and journal for Stransfer. Native baseline is File.Copy followed by Flush(true), not Explorer UI. Comparison mode uses no baseline hashing and reports Stransfer verification on/off separately. No cold-cache claims.",
+  "results": [
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Windows File.Copy \u002B flush",
+      "medianSeconds": 0.5235525,
+      "samplesSeconds": [
+        0.5235525,
+        0.5152456,
+        0.5599268
+      ]
+    },
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Stransfer verification off",
+      "medianSeconds": 0.5629127,
+      "samplesSeconds": [
+        0.6215859,
+        0.5338207,
+        0.5629127
+      ]
+    },
+    {
+      "workload": "1 \u00D7 512 MiB",
+      "engine": "Stransfer verification on",
+      "medianSeconds": 1.3038603,
+      "samplesSeconds": [
+        1.4828037,
+        1.3038603,
+        1.2990153
+      ]
+    }
+  ]
+}

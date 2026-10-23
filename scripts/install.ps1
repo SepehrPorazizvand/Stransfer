@@ -83,7 +83,7 @@ if (-not (Test-Path -LiteralPath $settingsFile)) {
 $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Stransfer"
 New-Item -Path $uninstallKey -Force | Out-Null
 Set-ItemProperty -Path $uninstallKey -Name "DisplayName" -Value "Stransfer"
-Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.1.1"
+Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.1.2"
 Set-ItemProperty -Path $uninstallKey -Name "Publisher" -Value "Stransfer"
 Set-ItemProperty -Path $uninstallKey -Name "DisplayIcon" -Value "$installedExecutable,0"
 Set-ItemProperty -Path $uninstallKey -Name "InstallLocation" -Value $installDirectory

@@ -4,7 +4,10 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 
 | Check | Result |
 |---|---|
-| Core integration suite | 33/33 passed, including native accelerated copy pause/checkpoint/restart and transient manifest/journal sharing locks |
+| Core integration suite | 34/34 passed, including native accelerated copy pause/checkpoint/restart, large-file batch recovery and transient manifest/journal sharing locks |
+| Native pause before the periodic checkpoint | Passed: flushes the native destination handle before stopping, reloads the exact saved offset and resumes to identical contents |
+| Large unbuffered native copies | Passed: non-sector-aligned final block, read-only source attribute retention, early pause and restart; Fast large-file batches retain their sources and resume to identical SHA-256 contents |
+| Actual Desktop/Camera C: → D: comparison | Passed: 313 files / 10.93 GiB, two reversed-order rounds per trial; final Windows and Stransfer outputs matched all source SHA-256 hashes, originals unchanged, isolated outputs cleaned. Selected Fast mean 30.398 s versus Shell 26.339 s; see PERFORMANCE.md |
 | Sequential abrupt process termination and recovery | Passed with real child-process termination |
 | Parallel abrupt process termination and recovery | Passed; also repeated eight times after fixing transient lock handling |
 | Real WPF resources, layout and bindings | Passed |

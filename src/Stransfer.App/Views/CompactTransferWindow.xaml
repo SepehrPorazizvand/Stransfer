@@ -14,7 +14,7 @@
     <DockPanel Margin="0,0,0,8">
       <Border DockPanel.Dock="Right" Background="{DynamicResource AccentGlowBrush}" CornerRadius="8" Padding="8,3" VerticalAlignment="Center"
               Visibility="{Binding HasJob, Converter={StaticResource BoolVisibility}}">
-        <TextBlock Text="{Binding Job.Status}" Foreground="{DynamicResource AccentBrush}" FontSize="11" TextWrapping="NoWrap"/>
+        <TextBlock Text="{Binding StatusDetail}" Foreground="{DynamicResource AccentBrush}" FontSize="11" TextWrapping="NoWrap"/>
       </Border>
       <Image Source="pack://application:,,,/Stransfer;component/Assets/app.png" Width="24" Height="24" Margin="0,0,8,0"/>
       <TextBlock Text="{Binding Heading}" FontSize="15" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>

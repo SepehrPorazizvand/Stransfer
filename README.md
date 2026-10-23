@@ -34,9 +34,9 @@ Current limits:
 
 ## Performance
 
-- Auto uses four workers for files up to 1 MiB only when both local drives report no seek penalty. HDDs, removable drives and uncertain devices use a sequential worker. Manual choices are 1/2/4/8 workers.
+- Auto uses four workers for files below 8 MiB only when both local drives report no seek penalty. HDDs, removable drives and uncertain devices use a sequential worker. Manual choices are 1/2/4/8 workers. Large files are copied one at a time. Large Fast copies use unbuffered native I/O from 256 MiB, with durable checkpoints and a final flush.
 - Fast local copies of fresh files at least 8 MiB use CopyFileEx with Stransfer checkpoints and no Windows copy dialog. Stopped partials resume through the prefix-validated streaming engine. Verified copies use bounded pooled buffers with overlapping read/write and inline source hashing. Read-back hashing also uses pooled large blocks.
-- Local checkpoints flush at the first 32 MiB, then at 256 MiB or one second, and on pause/completion. A forced loss can require recopying data after the last durable checkpoint.
+- Fast native checkpoints flush at 256 MiB or one second, and before stopping or publishing a file; they avoid a redundant first-32-MiB flush in every video/photo file. Verified streaming starts with a 32 MiB checkpoint, then 256 MiB or one second. A forced loss can require recopying data after the last durable checkpoint.
 - Small-file workers share durable journal flushes. The immutable file plan is not rewritten for every file.
 - Validated Windows directories are pinned without delete sharing, reducing repeated ancestor checks while protecting their paths during the run.
 - Only one queued job runs at a time to avoid competing disk workloads.
