@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Stransfer.App.Models;
 using Stransfer.App.ViewModels;
+using Stransfer.App.Views;
 using Stransfer.Core;
 using Forms = System.Windows.Forms;
 
@@ -18,6 +19,8 @@ public sealed class AppRuntime
     private readonly DesktopDialogs dialogs;
     private readonly HashSet<Guid> prompted = new();
     private readonly Dictionary<Guid, uint> cutClipboard = new();
+    private readonly HashSet<CompactTransferWindow> transferWindows = new();
+    internal IReadOnlyCollection<CompactTransferWindow> TransferWindows => transferWindows.ToArray();
     private DateTime nextProbe;
     private bool probing, exiting, started;
     public TransferCoordinator Coordinator { get; }
@@ -44,7 +47,11 @@ public sealed class AppRuntime
         menu.Items.Add("Save progress and exit", null, (_, _) => window.Dispatcher.BeginInvoke(async () => await ExitAsync()));
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += (_, _) => window.Dispatcher.BeginInvoke(Reveal);
-        tray.BalloonTipClicked += (_, _) => window.Dispatcher.BeginInvoke(Reveal);
+        tray.BalloonTipClicked += (_, _) => window.Dispatcher.BeginInvoke(() =>
+        {
+            if (transferWindows.LastOrDefault() is { } progress) { progress.Show(); progress.WindowState = WindowState.Normal; progress.Activate(); }
+            else Reveal();
+        });
         Coordinator.Finished += (_, job) =>
         {
             prompted.Add(job.Id);
@@ -54,18 +61,19 @@ public sealed class AppRuntime
             if (job.Status is TransferStatus.Completed or TransferStatus.Failed or TransferStatus.WaitingForDrive)
                 Notify(job.Status == TransferStatus.Completed ? "Transfer completed." : job.Error ?? "Transfer paused.");
             ViewModel.Refresh();
+            RefreshTransferWindows();
         };
         timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        timer.Tick += async (_, _) => { ViewModel.Refresh(); await ProbeResumeAsync(); };
+        timer.Tick += async (_, _) => { ViewModel.Refresh(); RefreshTransferWindows(); await ProbeResumeAsync(); };
     }
-    public async Task StartAsync(bool background)
+    public async Task StartAsync(bool background, bool promptResume = true)
     {
         if (started) return; started = true;
         SaveSettings(); ViewModel.Refresh(); timer.Start();
         if (background) window.Hide();
         if (store.LoadWarning is { } warning) ViewModel.Status = warning;
         if (Coordinator.RecoveryWarnings.Count > 0) ViewModel.Status = string.Join("\n", Coordinator.RecoveryWarnings);
-        await ProbeResumeAsync();
+        if (promptResume) await ProbeResumeAsync();
     }
     private void SaveSettings()
     {
@@ -96,16 +104,37 @@ public sealed class AppRuntime
             using var clip = ShellClipboardReader.Read() ?? throw new IOException("Copy or cut files in Explorer first.");
             await AcceptPasteAsync(clip, arguments[index + 1]);
         }
-        catch (Exception error) { ViewModel.Report(error); }
+        catch (Exception error) { ViewModel.Status = error.Message; Notify(error.Message); }
     }
-    private async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
+    internal async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
     {
         if (exiting) throw new IOException("Stransfer is shutting down. Paste again after restarting it.");
-        var sources = clipboard.Shell is { } shell ? shell.ReadSources() : clipboard.Sources;
-        var id = await ViewModel.CreateAndScheduleAsync(sources, destination, clipboard.Operation);
-        prompted.Add(id);
-        if (clipboard.Operation == TransferOperation.Move) cutClipboard[id] = clipboard.Sequence;
-        Notify("Transfer queued. Double-click the tray icon to see progress.");
+        window.Hide();
+        var model = new CompactTransferViewModel(
+            id => { prompted.Add(id); Coordinator.Pause(id); RefreshTransferWindows(); },
+            id => { prompted.Add(id); Coordinator.Schedule(id); RefreshTransferWindows(); },
+            Reveal, path => { try { DesktopDialogs.OpenFolder(path); } catch (Exception error) { Notify(error.Message); } });
+        var progress = new CompactTransferWindow(model);
+        transferWindows.Add(progress);
+        progress.Closed += (_, _) => transferWindows.Remove(progress);
+        progress.Show();
+        try
+        {
+            var sources = clipboard.Shell is { } shell ? shell.ReadSources() : clipboard.Sources;
+            var id = await ViewModel.CreateAndScheduleAsync(sources, destination, clipboard.Operation);
+            prompted.Add(id);
+            if (clipboard.Operation == TransferOperation.Move) cutClipboard[id] = clipboard.Sequence;
+            model.Update(Coordinator.Jobs.Single(job => job.Id == id), Coordinator.IsScheduled(id));
+        }
+        catch (Exception error) { model.Fail(error.Message); ViewModel.Status = error.Message; }
+    }
+    private void RefreshTransferWindows()
+    {
+        if (transferWindows.Count == 0) return;
+        var jobs = Coordinator.Jobs.ToDictionary(job => job.Id);
+        foreach (var progress in transferWindows)
+            if (progress.ViewModel.JobId is { } id && jobs.TryGetValue(id, out var job))
+                progress.ViewModel.Update(job, Coordinator.IsScheduled(id));
     }
     private async Task ChoosePasteDestinationAsync(ClipboardTransfer clipboard)
     {
@@ -114,7 +143,7 @@ public sealed class AppRuntime
     }
     private async Task ProbeResumeAsync()
     {
-        if (probing || exiting || dialogs.IsOpen || ViewModel.ResumeVisible || DateTime.UtcNow < nextProbe) return;
+        if (probing || exiting || dialogs.IsOpen || ViewModel.ResumeVisible || transferWindows.Any(progress => progress.IsVisible) || DateTime.UtcNow < nextProbe) return;
         nextProbe = DateTime.UtcNow.AddSeconds(3); probing = true;
         try
         {
@@ -142,6 +171,7 @@ public sealed class AppRuntime
     {
         if (exiting) return; exiting = true;
         timer.Stop(); explorer.Dispose(); ViewModel.Status = "Saving progress…";
+        foreach (var progress in transferWindows.ToArray()) progress.Close();
         try { await Coordinator.StopAsync(); }
         catch (OperationCanceledException) { }
         catch (Exception error) { ViewModel.Status = "Device transfer stopped: " + error.Message; }

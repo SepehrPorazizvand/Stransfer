@@ -157,6 +157,8 @@ internal static class Program
             Console.WriteLine("PASS  composer starts a new checked transfer off the UI thread and displays available space");
             TestSingleInstance(errors);
             TestCompletedRemoval(root, errors);
+            CompactTransferTests.Run(window, root);
+            AssertNoErrors(errors, bindingTrace);
             result = 0;
         }
         catch (Exception error)

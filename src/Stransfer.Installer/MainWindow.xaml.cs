@@ -186,7 +186,7 @@ public partial class MainWindow : Window
             {
                 using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\Stransfer");
                 key.SetValue("DisplayName", "Stransfer");
-                key.SetValue("DisplayVersion", "1.1.0");
+                key.SetValue("DisplayVersion", "1.1.1");
                 key.SetValue("Publisher", "Stransfer");
                 key.SetValue("DisplayIcon", targetExe + ",0");
                 key.SetValue("InstallLocation", installDir);

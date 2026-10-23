@@ -1,0 +1,64 @@
+<Window x:Class="Stransfer.App.Views.CompactTransferWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle}" Width="480" Height="330" ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen" Language="en-US"
+        Style="{StaticResource {x:Type Window}}"
+        Icon="pack://application:,,,/Stransfer;component/Assets/app.ico">
+  <Grid Margin="16,12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <DockPanel Margin="0,0,0,8">
+      <Border DockPanel.Dock="Right" Background="{DynamicResource AccentGlowBrush}" CornerRadius="8" Padding="8,3" VerticalAlignment="Center"
+              Visibility="{Binding HasJob, Converter={StaticResource BoolVisibility}}">
+        <TextBlock Text="{Binding Job.Status}" Foreground="{DynamicResource AccentBrush}" FontSize="11" TextWrapping="NoWrap"/>
+      </Border>
+      <Image Source="pack://application:,,,/Stransfer;component/Assets/app.png" Width="24" Height="24" Margin="0,0,8,0"/>
+      <TextBlock Text="{Binding Heading}" FontSize="15" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+    </DockPanel>
+    <Grid Grid.Row="1">
+      <StackPanel VerticalAlignment="Center" Visibility="{Binding IsPreparing, Converter={StaticResource BoolVisibility}}">
+        <ProgressBar IsIndeterminate="True" Height="6" Margin="0,0,0,12"/>
+        <TextBlock Text="{Binding Message}" Foreground="{DynamicResource MutedBrush}" FontSize="12" TextAlignment="Center"/>
+      </StackPanel>
+      <StackPanel Visibility="{Binding HasJob, Converter={StaticResource BoolVisibility}}">
+        <TextBlock Text="{Binding Job.Route}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,0,0,7" ToolTip="{Binding Job.Route}"/>
+        <DockPanel Margin="0,0,0,6">
+          <TextBlock DockPanel.Dock="Right" Text="{Binding Job.PercentText}" FontSize="23" FontWeight="Bold"/>
+          <TextBlock Text="{Binding Job.SpeedText}" FontSize="23" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+        </DockPanel>
+        <ProgressBar x:Name="TransferProgress" Value="{Binding Job.Percent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,0,0,8"/>
+        <Border Background="#0D0F15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Height="48" ClipToBounds="True" Margin="0,0,0,7">
+          <Grid>
+            <Line X1="0" Y1="16" X2="1000" Y2="16" Stroke="#181B26"/>
+            <Line X1="0" Y1="32" X2="1000" Y2="32" Stroke="#181B26"/>
+            <Viewbox Stretch="Fill">
+              <Canvas Width="360" Height="50">
+                <Polygon Points="{Binding Job.SpeedGraphPoints}" Fill="{DynamicResource SpeedChartFillBrush}"/>
+                <Polyline Points="{Binding Job.SpeedLinePoints}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
+              </Canvas>
+            </Viewbox>
+          </Grid>
+        </Border>
+        <TextBlock Text="{Binding CurrentFile}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" FontSize="12" ToolTip="{Binding Job.CurrentFile}"/>
+        <TextBlock Text="{Binding Job.RemainingTimeText}" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="NoWrap"/>
+        <TextBlock Text="{Binding Job.Progress}" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="NoWrap"/>
+      </StackPanel>
+      <Border Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" VerticalAlignment="Bottom"
+              Visibility="{Binding HasMessage, Converter={StaticResource BoolVisibility}}">
+        <TextBlock x:Name="TransferMessage" Text="{Binding Message}" FontSize="12" TextWrapping="Wrap" MaxHeight="110"/>
+      </Border>
+    </Grid>
+    <DockPanel Grid.Row="2" Margin="0,10,0,0">
+      <Button DockPanel.Dock="Right" Content="Open app" Command="{Binding OpenApp}" Style="{StaticResource LinkButton}" Margin="8,0,0,0"/>
+      <StackPanel Orientation="Horizontal" Visibility="{Binding HasJob, Converter={StaticResource BoolVisibility}}">
+        <Button x:Name="PauseTransfer" Content="⏸ Pause" Command="{Binding Pause}" Padding="11,5" FontSize="12" Visibility="{Binding Job.CanPause, Converter={StaticResource BoolVisibility}}"/>
+        <Button x:Name="ResumeTransfer" Content="▶ Resume" Command="{Binding Resume}" Style="{StaticResource Primary}" Padding="11,5" FontSize="12" Visibility="{Binding Job.CanResume, Converter={StaticResource BoolVisibility}}"/>
+        <Button Content="Open folder" Command="{Binding OpenDestination}" Padding="11,5" FontSize="12"/>
+      </StackPanel>
+    </DockPanel>
+  </Grid>
+</Window>

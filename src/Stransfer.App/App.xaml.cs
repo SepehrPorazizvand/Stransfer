@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Interop;
 using Stransfer.App.Services;
 
 namespace Stransfer.App;
@@ -30,10 +31,17 @@ public partial class App : Application
             catch (Exception error) { MessageBox.Show("The running instance could not receive this command.\n" + error.Message, "Stransfer"); }
             Shutdown(); return;
         }
-        var window = new MainWindow(e.Args.Contains("--background") || e.Args.Contains("--paste"));
+        bool background = e.Args.Contains("--background") || e.Args.Contains("--paste");
+        var window = new MainWindow(background);
         MainWindow = window;
         _ = instance.ListenAsync(arguments => Dispatcher.BeginInvoke(async () => await window.Runtime.HandleArgumentsAsync(arguments)));
-        window.Show();
+        if (background)
+        {
+            // Create the hotkey/IPC window handle without briefly flashing the dashboard.
+            new WindowInteropHelper(window).EnsureHandle();
+            await window.Runtime.StartAsync(background: true, promptResume: !e.Args.Contains("--paste"));
+        }
+        else window.Show();
         await window.Runtime.HandleArgumentsAsync(e.Args);
         SessionEnding += (_, _) => { foreach (var job in window.Runtime.Coordinator.Jobs) window.Runtime.Coordinator.Pause(job.Id); };
     }
