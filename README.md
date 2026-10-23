@@ -2,6 +2,8 @@
 
 Windows file transfers with durable progress, pause/resume, destination preflight and optional Explorer integration. The application UI and documentation are in English.
 
+![Stransfer transfer animation](docs/media/transfer-demo.gif)
+
 ## Use
 
 Launch `dist/Stransfer/Stransfer.exe` for the portable full build, or run `dist/StransferSetup.exe` to install it. No .NET installation or external copy tool is needed. Portable profiles start with Explorer integration and sign-in startup disabled. Setup offers the integration options explicitly. Configure the keyboard shortcut on **Shortcuts** and background/startup behavior in **Settings**.
