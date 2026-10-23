@@ -103,6 +103,7 @@ public sealed class AppRuntime
     private async Task AcceptPasteAsync(ClipboardTransfer clipboard, string destination)
     {
         if (exiting) throw new IOException("Stransfer is shutting down. Paste again after restarting it.");
+        if (deviceCopy is not null) throw new IOException("A device copy is already running. Wait for it to finish or cancel it in Windows progress.");
         if (clipboard.Shell is { } shell)
         {
             ViewModel.Status = "Starting USB / virtual-file copy. Windows shows device transfer progress.";

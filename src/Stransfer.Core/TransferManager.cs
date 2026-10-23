@@ -26,29 +26,41 @@ public sealed partial class TransferManager : IDisposable
         Directory.CreateDirectory(_stateDirectory);
         foreach (var path in Directory.EnumerateFiles(_stateDirectory, "*.json"))
         {
-            try
+            for (int attempt = 0; ; attempt++)
             {
-                var state = JsonSerializer.Deserialize<JobState>(File.ReadAllBytes(path), JsonOptions);
-                if (state is null || state.Version != 1 || state.Id == Guid.Empty || Path.GetFileNameWithoutExtension(path) != state.Id.ToString("N"))
-                    throw new InvalidDataException("Unsupported or invalid transfer record.");
-                ValidateRecord(state);
-                for (var index = 0; index < state.Files.Count; index++) state.Files[index].Index = index;
-                ReplayJournal(state);
-                state.CurrentFile = null;
-                foreach (var file in state.Files) file.Offset = file.Completed ? file.Length : file.DurableOffset;
-                RecalculateProgress(state);
-                state.ManifestSaved = true;
-                state.ManifestLength = new FileInfo(path).Length;
-                if (state.Status is TransferStatus.Running or TransferStatus.Scanning or TransferStatus.Queued)
+                try
                 {
-                    state.Status = TransferStatus.Paused;
+                    var state = JsonSerializer.Deserialize<JobState>(File.ReadAllBytes(path), JsonOptions);
+                    if (state is null || state.Version != 1 || state.Id == Guid.Empty || Path.GetFileNameWithoutExtension(path) != state.Id.ToString("N"))
+                        throw new InvalidDataException("Unsupported or invalid transfer record.");
+                    ValidateRecord(state);
+                    for (var index = 0; index < state.Files.Count; index++) state.Files[index].Index = index;
+                    ReplayJournal(state);
                     state.CurrentFile = null;
+                    foreach (var file in state.Files) file.Offset = file.Completed ? file.Length : file.DurableOffset;
+                    RecalculateProgress(state);
+                    state.ManifestSaved = true;
+                    state.ManifestLength = new FileInfo(path).Length;
+                    if (state.Status is TransferStatus.Running or TransferStatus.Scanning or TransferStatus.Queued)
+                    {
+                        state.Status = TransferStatus.Paused;
+                        state.CurrentFile = null;
+                    }
+                    _jobs[state.Id] = state;
+                    break;
                 }
-                _jobs[state.Id] = state;
-            }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException or ArgumentException or OverflowException)
-            {
-                _recoveryWarnings.Add($"Could not load {Path.GetFileName(path)}: {ex.Message}");
+                catch (IOException ex) when (attempt < 6 && ((ex.HResult & 0xffff) is 32 or 33
+                    || ex.InnerException is System.ComponentModel.Win32Exception { NativeErrorCode: 32 or 33 }))
+                {
+                    // Process termination and scanners can briefly retain manifest/journal handles.
+                    // Retry the entire read/replay with a fresh state; never classify a short lock as corruption.
+                    Thread.Sleep(Math.Min(50 << attempt, 800));
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException or ArgumentException or OverflowException)
+                {
+                    _recoveryWarnings.Add($"Could not load {Path.GetFileName(path)}: {ex.Message}");
+                    break;
+                }
             }
         }
     }

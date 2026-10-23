@@ -10,6 +10,10 @@ The core console harness uses unique temporary directories and known test data. 
 
 The FAT32 limit test creates a sparse file with a real logical length above the limit and injects only the filesystem/capacity response. It does not write 4 GiB of physical data. Capacity tests inject free-space responses without filling a real drive.
 
+Recovery tests briefly lock the manifest and journal to check startup retry behavior without treating temporary sharing locks as corruption.
+
 The WPF harness loads real resources and views in an isolated profile, uses real button automation peers/commands, resumes a seeded job, verifies files and history, visits Settings/Tools, checks binding errors and shuts down through the normal application lifecycle. `STRANSFER_PREVIEW_DIR` optionally writes render previews. It does not register Explorer commands, alter startup, install tools or touch user clipboard data.
+
+The harness also validates exact hotkey registration, installed-tool Install/Remove state with fake package actions, and a real Shell namespace copy without FileDrop paths. Device tests check folders, empty directories, collisions and source retention. `--clipboard-formats` is a diagnostic that prints only current clipboard format names, without file/text contents.
 
 `--test "name fragment"` filters core cases for diagnosis. Windows physical unplug/reconnect, power loss, UAC, installers and Explorer keyboard/tab integration require the manual matrix in `docs/VALIDATION.md`.

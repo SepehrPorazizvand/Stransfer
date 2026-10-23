@@ -42,6 +42,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("missing partial file resumes by copying from the beginning", MissingPartial),
     ("missing source fails without publishing a final destination", MissingSource),
     ("one malformed persisted record does not hide healthy jobs", MalformedRecord),
+    ("recovery waits for transient manifest and journal sharing locks", TransientRecoveryLock),
     ("a different volume is rejected until the original identity returns", WrongVolume),
     ("preflight rejects insufficient allocation space before accepting a job", InsufficientSpace),
     ("queued and resumed transfers recheck free space before writing", RecheckSpace),
@@ -538,7 +539,31 @@ static async Task MissingPartial()
     await EqualFiles(source, Path.Combine(sandbox.Destination, "lost-partial.bin"));
 }
 
-static TransferJobSnapshot GetJob(TransferManager manager, Guid id) => manager.Jobs.Single(job => job.Id == id);
+static TransferJobSnapshot GetJob(TransferManager manager, Guid id) => manager.Jobs.FirstOrDefault(job => job.Id == id)
+    ?? throw new InvalidOperationException("Transfer record was not loaded. " + string.Join(" | ", manager.RecoveryWarnings));
+
+static async Task TransientRecoveryLock()
+{
+    if (!OperatingSystem.IsWindows()) return;
+    foreach (var extension in new[] { ".json", ".journal" })
+    {
+        using var sandbox = new Sandbox();
+        var source = Path.Combine(sandbox.Source, "locked.txt"); await File.WriteAllTextAsync(source, "Recover after a transient state-file lock.");
+        Guid id;
+        using (var seed = new TransferManager(sandbox.State)) id = (await seed.CreateJobAsync([source], sandbox.Destination)).Id;
+        var path = Path.Combine(sandbox.State, id.ToString("N") + extension);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        var load = Task.Run(() => { started.SetResult(); return new TransferManager(sandbox.State); });
+        try { await started.Task; await Task.Delay(180); }
+        finally { held.Dispose(); }
+        using var recovered = await load;
+        Equal(TransferStatus.Paused, GetJob(recovered, id).Status);
+        Equal(0, recovered.RecoveryWarnings.Count);
+        await recovered.RunAsync(id); Equal(TransferStatus.Completed, GetJob(recovered, id).Status);
+        await EqualFiles(source, Path.Combine(sandbox.Destination, "locked.txt"));
+    }
+}
 
 static async Task InsufficientSpace()
 {

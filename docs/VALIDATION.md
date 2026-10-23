@@ -4,7 +4,7 @@ Validated on the development Windows x64 environment; shortcut update on 2026-10
 
 | Check | Result |
 |---|---|
-| Core integration suite | 31/31 passed |
+| Core integration suite | 32/32 passed, including transient manifest/journal sharing locks |
 | Sequential abrupt process termination and recovery | Passed with real child-process termination |
 | Parallel abrupt process termination and recovery | Passed; also repeated eight times after fixing transient lock handling |
 | Real WPF resources, layout and bindings | Passed |
