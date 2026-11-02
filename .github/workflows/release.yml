@@ -5,6 +5,8 @@ on:
     paths:
       - 'Directory.Build.props'
       - '.github/workflows/release.yml'
+      - 'scripts/check-secrets.ps1'
+      - 'global.json'
   workflow_dispatch:
 permissions:
   contents: read

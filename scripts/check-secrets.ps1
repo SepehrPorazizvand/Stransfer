@@ -62,5 +62,7 @@ try {
         throw 'Possible credentials found. Remove them before publishing; rotate any real credential already exposed.'
     }
     Write-Host 'PASS  credential checks (no matching secrets or credential files found).'
+    # git grep returns 1 for no matches; do not let Actions treat that as a failure.
+    $global:LASTEXITCODE = 0
 }
 finally { Pop-Location }
