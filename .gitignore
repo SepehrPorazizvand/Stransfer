@@ -9,3 +9,14 @@ TestResults/
 *.log
 .ui-test/
 jobs/
+
+# Local credentials must never be committed or packaged.
+.env
+.env.*
+!.env.example
+.secrets/
+secrets.local.json
+credentials.local.json
+*.pfx
+*.p12
+*.key

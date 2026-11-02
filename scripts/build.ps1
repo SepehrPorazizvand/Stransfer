@@ -23,6 +23,7 @@ if (-not (Get-Command $dotnetCommand -ErrorAction SilentlyContinue)) {
 
 Push-Location $projectRoot
 try {
+    & (Join-Path $PSScriptRoot 'check-secrets.ps1')
     if (-not $NoTests -and (Test-Path -LiteralPath $testProject)) {
         & $dotnetCommand run --project $testProject --configuration $Configuration
         if ($LASTEXITCODE -ne 0) { throw "Tests failed (exit code $LASTEXITCODE)." }

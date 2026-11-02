@@ -37,7 +37,7 @@ Automatic checks can be disabled. Downloads never start automatically.
 
 ## Build
 
-Windows and the .NET 10 SDK are required.
+Windows and the exact .NET SDK version in `global.json` are required.
 
 ```powershell
 ./scripts/build.ps1 -SelfContained
@@ -46,4 +46,4 @@ Windows and the .NET 10 SDK are required.
 
 Release files are in `dist/releases/`. Change `StransferVersion` in `Directory.Build.props` and push to `main` to publish a newer release automatically after tests pass.
 
-[Safety and test status](docs/VALIDATION.md) · [Performance](docs/PERFORMANCE.md) · [Release and update details](docs/UPDATES.md)
+[Safety and test status](docs/VALIDATION.md) · [Performance](docs/PERFORMANCE.md) · [Release and update details](docs/UPDATES.md) · [Security](SECURITY.md)
